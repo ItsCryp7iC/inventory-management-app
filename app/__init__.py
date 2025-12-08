@@ -21,4 +21,9 @@ def create_app():
     from .assets import bp as assets_bp
     app.register_blueprint(assets_bp)
 
+    # Jinja globals (for date calculations in templates)
+    from datetime import date, timedelta
+    app.jinja_env.globals["date"] = date
+    app.jinja_env.globals["timedelta"] = timedelta
+
     return app

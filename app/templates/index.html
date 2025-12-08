@@ -13,7 +13,7 @@
         <div class="card shadow-sm">
             <div class="card-body">
                 <h2 class="h6 mb-1">Total Assets</h2>
-                <p class="display-6 mb-0">0</p>
+                <p class="display-6 mb-0">{{ total_assets }}</p>
             </div>
         </div>
     </div>
@@ -22,7 +22,7 @@
         <div class="card shadow-sm">
             <div class="card-body">
                 <h2 class="h6 mb-1">In Use</h2>
-                <p class="display-6 mb-0">0</p>
+                <p class="display-6 mb-0">{{ in_use_count }}</p>
             </div>
         </div>
     </div>
@@ -31,7 +31,7 @@
         <div class="card shadow-sm">
             <div class="card-body">
                 <h2 class="h6 mb-1">In Stock</h2>
-                <p class="display-6 mb-0">0</p>
+                <p class="display-6 mb-0">{{ in_stock_count }}</p>
             </div>
         </div>
     </div>
@@ -40,7 +40,7 @@
         <div class="card shadow-sm">
             <div class="card-body">
                 <h2 class="h6 mb-1">Retired</h2>
-                <p class="display-6 mb-0">0</p>
+                <p class="display-6 mb-0">{{ retired_count }}</p>
             </div>
         </div>
     </div>
@@ -49,10 +49,77 @@
     <div class="col-12 mt-3">
         <div class="card shadow-sm">
             <div class="card-body">
-                <h2 class="h6 mb-3">Assets Needing Attention</h2>
-                <p class="text-muted mb-0">
-                    No data yet. Once assets are added, items with issues (e.g., warranty expiry, broken, or missing info) will show here.
-                </p>
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <h2 class="h6 mb-0">Assets Needing Attention</h2>
+                    <a href="{{ url_for('assets.list_assets') }}" class="small text-decoration-none">
+                        View all assets
+                    </a>
+                </div>
+
+                {% if attention_assets %}
+                    <div class="table-responsive">
+                        <table class="table table-sm align-middle mb-0">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Name</th>
+                                    <th>Status</th>
+                                    <th>Location</th>
+                                    <th>Category</th>
+                                    <th>Warranty Expiry</th>
+                                    <th>Issue</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for asset in attention_assets %}
+                                <tr>
+                                    <td>{{ asset.id }}</td>
+                                    <td>{{ asset.name }}</td>
+                                    <td>
+                                        <span class="badge bg-secondary">{{ asset.status }}</span>
+                                    </td>
+                                    <td>{{ asset.location.name if asset.location else "Missing" }}</td>
+                                    <td>{{ asset.category.name if asset.category else "Missing" }}</td>
+                                    <td>
+                                        {% if asset.warranty_expiry_date %}
+                                            {{ asset.warranty_expiry_date }}
+                                        {% else %}
+                                            -
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% set issues = [] %}
+                                        {% if asset.status == "under_repair" %}
+                                            {% set _ = issues.append("Under repair") %}
+                                        {% endif %}
+                                        {% if asset.warranty_expiry_date and asset.warranty_expiry_date < date.today() %}
+                                            {% set _ = issues.append("Warranty expired") %}
+                                        {% elif asset.warranty_expiry_date and asset.warranty_expiry_date >= date.today() and asset.warranty_expiry_date <= date.today() + timedelta(days=30) %}
+                                            {% set _ = issues.append("Warranty expiring soon") %}
+                                        {% endif %}
+                                        {% if not asset.location %}
+                                            {% set _ = issues.append("No location set") %}
+                                        {% endif %}
+                                        {% if not asset.category %}
+                                            {% set _ = issues.append("No category set") %}
+                                        {% endif %}
+
+                                        {% if issues %}
+                                            {{ issues|join(", ") }}
+                                        {% else %}
+                                            -
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <p class="text-muted mb-0">
+                        No assets currently require attention based on warranty, status, or missing data.
+                    </p>
+                {% endif %}
             </div>
         </div>
     </div>
