@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+
+{% block title %}Assets - IT Inventory Management{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h1 class="h3 mb-0">Assets</h1>
+    <a href="#" class="btn btn-primary btn-sm" disabled>
+        Add Asset (coming soon)
+    </a>
+</div>
+
+<div class="card shadow-sm">
+    <div class="card-body">
+        {% if assets %}
+            <div class="table-responsive">
+                <table class="table table-sm align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Asset Tag</th>
+                            <th>Name</th>
+                            <th>Category</th>
+                            <th>Sub-Category</th>
+                            <th>Location</th>
+                            <th>Status</th>
+                            <th>Purchase Date</th>
+                            <th>Warranty Expiry</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for asset in assets %}
+                        <tr>
+                            <td>{{ asset.id }}</td>
+                            <td>{{ asset.asset_tag or "-" }}</td>
+                            <td>{{ asset.name }}</td>
+                            <td>{{ asset.category.name if asset.category else "-" }}</td>
+                            <td>{{ asset.subcategory.name if asset.subcategory else "-" }}</td>
+                            <td>{{ asset.location.name if asset.location else "-" }}</td>
+                            <td>
+                                <span class="badge bg-secondary">
+                                    {{ asset.status }}
+                                </span>
+                            </td>
+                            <td>{{ asset.purchase_date or "-" }}</td>
+                            <td>{{ asset.warranty_expiry_date or "-" }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <p class="text-muted mb-0">
+                No assets found. Asset creation form will be added next.
+            </p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

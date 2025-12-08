@@ -43,10 +43,10 @@
         <!-- Sidebar -->
         <aside class="col-12 col-md-3 col-lg-2 mb-3">
             <div class="list-group small">
-                <a href="{{ url_for('main.index') }}" class="list-group-item list-group-item-action active">
+                <a href="{{ url_for('main.index') }}" class="list-group-item list-group-item-action{% if request.endpoint == 'main.index' %} active{% endif %}">
                     Dashboard
                 </a>
-                <a href="#" class="list-group-item list-group-item-action">
+                <a href="{{ url_for('assets.list_assets') }}" class="list-group-item list-group-item-action{% if request.endpoint and request.endpoint.startswith('assets.') %} active{% endif %}">
                     Assets
                 </a>
                 <a href="#" class="list-group-item list-group-item-action">

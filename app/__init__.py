@@ -20,4 +20,7 @@ def create_app():
     from .main import bp as main_bp
     app.register_blueprint(main_bp)
 
+    from .assets import bp as assets_bp
+    app.register_blueprint(assets_bp)
+
     return app
