@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - IT Inventory Management{% endblock %}
+
+{% block content %}
+<div class="row g-3">
+    <div class="col-12">
+        <h1 class="h3 mb-3">Dashboard</h1>
+    </div>
+
+    <!-- Stats widgets -->
+    <div class="col-12 col-md-3">
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <h2 class="h6 mb-1">Total Assets</h2>
+                <p class="display-6 mb-0">0</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-12 col-md-3">
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <h2 class="h6 mb-1">In Use</h2>
+                <p class="display-6 mb-0">0</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-12 col-md-3">
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <h2 class="h6 mb-1">In Stock</h2>
+                <p class="display-6 mb-0">0</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-12 col-md-3">
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <h2 class="h6 mb-1">Retired</h2>
+                <p class="display-6 mb-0">0</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Assets needing attention -->
+    <div class="col-12 mt-3">
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <h2 class="h6 mb-3">Assets Needing Attention</h2>
+                <p class="text-muted mb-0">
+                    No data yet. Once assets are added, items with issues (e.g., warranty expiry, broken, or missing info) will show here.
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,65 @@
+/* CSS variables for theming */
+
+:root {
+    --color-bg: #0f172a;       /* dark slate */
+    --color-bg-soft: #111827;
+    --color-border: #1f2937;
+    --color-text: #e5e7eb;
+    --color-text-muted: #9ca3af;
+    --color-card-bg: #020617;
+}
+
+:root[data-theme="light"],
+html[data-theme="light"] {
+    --color-bg: #f8fafc;
+    --color-bg-soft: #ffffff;
+    --color-border: #e5e7eb;
+    --color-text: #111827;
+    --color-text-muted: #6b7280;
+    --color-card-bg: #ffffff;
+}
+
+/* Apply theme variables */
+
+html, body {
+    background-color: var(--color-bg);
+    color: var(--color-text);
+}
+
+/* Override some Bootstrap backgrounds using variables */
+
+body.bg-body {
+    background-color: var(--color-bg) !important;
+    color: var(--color-text) !important;
+}
+
+.navbar {
+    background-color: var(--color-bg-soft) !important;
+}
+
+.card {
+    background-color: var(--color-card-bg);
+    border-color: var(--color-border);
+    color: var(--color-text);
+}
+
+.list-group-item {
+    background-color: var(--color-bg-soft);
+    color: var(--color-text);
+    border-color: var(--color-border);
+}
+
+.list-group-item.active {
+    background-color: #2563eb;
+    border-color: #1d4ed8;
+}
+
+.text-muted {
+    color: var(--color-text-muted) !important;
+}
+
+/* General spacing tweaks */
+
+main {
+    padding-bottom: 2rem;
+}

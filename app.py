@@ -1,11 +1,12 @@
-from flask import Flask
+from flask import Flask, render_template
+
 
 def create_app():
     app = Flask(__name__)
 
     @app.route("/")
     def index():
-        return "<h1>Inventory Management App</h1><p>Backend is running.</p>"
+        return render_template("index.html")
 
     return app
 
