@@ -1,19 +1,17 @@
 from flask import Flask
-
-from .extensions import db, migrate
+from .extensions import db, migrate, csrf
 
 
 def create_app():
     app = Flask(__name__)
-
-    # Load config
     app.config.from_object("config.Config")
 
-    # Init extensions
+    # Init extensions ONCE
     db.init_app(app)
     migrate.init_app(app, db)
+    csrf.init_app(app)
 
-    # Import models so Flask-Migrate can see them
+    # Import models
     from . import models  # noqa
 
     # Register blueprints
