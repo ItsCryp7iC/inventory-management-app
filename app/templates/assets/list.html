@@ -26,8 +26,10 @@
                             <th>Status</th>
                             <th>Purchase Date</th>
                             <th>Warranty Expiry</th>
+                            <th>Actions</th>
                         </tr>
                     </thead>
+
                     <tbody>
                         {% for asset in assets %}
                         <tr>
@@ -44,6 +46,12 @@
                             </td>
                             <td>{{ asset.purchase_date or "-" }}</td>
                             <td>{{ asset.warranty_expiry_date or "-" }}</td>
+                            <td>
+                                <a href="{{ url_for('assets.edit_asset', asset_id=asset.id) }}"
+                                class="btn btn-sm btn-outline-secondary">
+                                    Edit
+                                </a>
+                            </td>
                         </tr>
                         {% endfor %}
                     </tbody>

@@ -4,11 +4,18 @@
 
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-3">
-    <h1 class="h3 mb-0">New Asset</h1>
+    <h1 class="h3 mb-0">
+        {% if is_edit %}
+            Edit Asset #{{ asset.id }}
+        {% else %}
+            New Asset
+        {% endif %}
+    </h1>
     <a href="{{ url_for('assets.list_assets') }}" class="btn btn-outline-secondary btn-sm">
         Cancel
     </a>
 </div>
+
 
 <div class="card shadow-sm">
     <div class="card-body">
@@ -122,7 +129,11 @@
 
                 <div class="col-12 mt-2">
                     <button type="submit" class="btn btn-primary">
-                        Save
+                        {% if is_edit %}
+                            Update
+                        {% else %}
+                            Save
+                        {% endif %}
                     </button>
                 </div>
             </div>

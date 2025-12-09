@@ -5,17 +5,8 @@ from app.models import Asset, Location, Category, SubCategory, Vendor
 from .forms import AssetForm
 
 
-@bp.route("/")
-def list_assets():
-    assets = Asset.query.order_by(Asset.id.desc()).all()
-    return render_template("assets/list.html", assets=assets)
-
-
-@bp.route("/new", methods=["GET", "POST"])
-def create_asset():
-    form = AssetForm()
-
-    # Populate dropdown choices
+def _populate_form_choices(form: AssetForm):
+    """Populate dropdown choices for the asset form."""
     locations = Location.query.order_by(Location.name).all()
     categories = Category.query.order_by(Category.name).all()
     subcategories = SubCategory.query.order_by(SubCategory.name).all()
@@ -34,6 +25,22 @@ def create_asset():
         (v.id, v.name) for v in vendors
     ]
 
+
+def _normalize_id(value):
+    return value if value and value != 0 else None
+
+
+@bp.route("/")
+def list_assets():
+    assets = Asset.query.order_by(Asset.id.desc()).all()
+    return render_template("assets/list.html", assets=assets)
+
+
+@bp.route("/new", methods=["GET", "POST"])
+def create_asset():
+    form = AssetForm()
+    _populate_form_choices(form)
+
     # Default status
     if request.method == "GET" and not form.status.data:
         form.status.data = "in_use"
@@ -45,10 +52,6 @@ def create_asset():
             form.location_id.data = mirpur.id
 
     if form.validate_on_submit():
-        # Convert "0" (--- Select ---) to None
-        def normalize_id(value):
-            return value if value and value != 0 else None
-
         asset = Asset(
             asset_tag=form.asset_tag.data or None,
             name=form.name.data,
@@ -58,10 +61,10 @@ def create_asset():
             purchase_date=form.purchase_date.data,
             warranty_expiry_date=form.warranty_expiry_date.data,
             cost=form.cost.data,
-            category_id=normalize_id(form.category_id.data),
-            subcategory_id=normalize_id(form.subcategory_id.data),
-            location_id=normalize_id(form.location_id.data),
-            vendor_id=normalize_id(form.vendor_id.data),
+            category_id=_normalize_id(form.category_id.data),
+            subcategory_id=_normalize_id(form.subcategory_id.data),
+            location_id=_normalize_id(form.location_id.data),
+            vendor_id=_normalize_id(form.vendor_id.data),
             notes=form.notes.data or None,
         )
 
@@ -74,3 +77,38 @@ def create_asset():
         flash("Please correct the errors in the form.", "danger")
 
     return render_template("assets/create.html", form=form)
+
+
+@bp.route("/<int:asset_id>/edit", methods=["GET", "POST"])
+def edit_asset(asset_id):
+    asset = Asset.query.get_or_404(asset_id)
+
+    form = AssetForm(obj=asset)
+    _populate_form_choices(form)
+
+    # For GET, AssetForm(obj=asset) already pre-fills everything.
+    # For POST, WTForms will override with submitted data.
+
+    if form.validate_on_submit():
+        asset.asset_tag = form.asset_tag.data or None
+        asset.name = form.name.data
+        asset.description = form.description.data or None
+        asset.serial_number = form.serial_number.data or None
+        asset.status = form.status.data
+        asset.purchase_date = form.purchase_date.data
+        asset.warranty_expiry_date = form.warranty_expiry_date.data
+        asset.cost = form.cost.data
+        asset.category_id = _normalize_id(form.category_id.data)
+        asset.subcategory_id = _normalize_id(form.subcategory_id.data)
+        asset.location_id = _normalize_id(form.location_id.data)
+        asset.vendor_id = _normalize_id(form.vendor_id.data)
+        asset.notes = form.notes.data or None
+
+        db.session.commit()
+        flash("Asset updated successfully.", "success")
+        return redirect(url_for("assets.list_assets"))
+
+    if form.errors and request.method == "POST":
+        flash("Please correct the errors in the form.", "danger")
+
+    return render_template("assets/create.html", form=form, is_edit=True, asset=asset)
