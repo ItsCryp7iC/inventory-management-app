@@ -49,12 +49,17 @@
                 <a href="{{ url_for('assets.list_assets') }}" class="list-group-item list-group-item-action{% if request.endpoint and request.endpoint.startswith('assets.') %} active{% endif %}">
                     Assets
                 </a>
-                <a href="#" class="list-group-item list-group-item-action">
+                
+                <a href="{{ url_for('categories.list_categories') }}"
+                class="list-group-item list-group-item-action{% if request.endpoint and request.endpoint.startswith('categories.') %} active{% endif %}">
                     Categories
+                </a>
+
                 <a href="{{ url_for('locations.list_locations') }}"
                 class="list-group-item list-group-item-action{% if request.endpoint and request.endpoint.startswith('locations.') %} active{% endif %}">
                     Locations
                 </a>
+
                 <a href="#" class="list-group-item list-group-item-action">
                     Vendors
                 </a>
