@@ -32,8 +32,51 @@ def _normalize_id(value):
 
 @bp.route("/")
 def list_assets():
-    assets = Asset.query.order_by(Asset.id.desc()).all()
-    return render_template("assets/list.html", assets=assets)
+    status = request.args.get("status", "").strip()
+    location_id = request.args.get("location_id", "").strip()
+    q = request.args.get("q", "").strip()
+
+    query = Asset.query
+
+    if status:
+        query = query.filter(Asset.status == status)
+
+    if location_id and location_id.isdigit():
+        query = query.filter(Asset.location_id == int(location_id))
+
+    if q:
+        like_pattern = f"%{q}%"
+        query = query.filter(
+            db.or_(
+                Asset.name.ilike(like_pattern),
+                Asset.asset_tag.ilike(like_pattern),
+                Asset.serial_number.ilike(like_pattern),
+            )
+        )
+
+    assets = query.order_by(Asset.id.desc()).all()
+
+    # For filter dropdowns
+    locations = Location.query.order_by(Location.name).all()
+
+    status_choices = [
+        ("", "All statuses"),
+        ("in_use", "In Use"),
+        ("in_stock", "In Stock"),
+        ("under_repair", "Under Repair"),
+        ("retired", "Retired"),
+        ("disposed", "Disposed"),
+    ]
+
+    return render_template(
+        "assets/list.html",
+        assets=assets,
+        status=status,
+        location_id=location_id,
+        q=q,
+        locations=locations,
+        status_choices=status_choices,
+    )
 
 
 @bp.route("/new", methods=["GET", "POST"])

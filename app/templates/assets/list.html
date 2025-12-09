@@ -10,6 +10,55 @@
     </a>
 </div>
 
+<!-- Filters -->
+<form method="get" class="card mb-3 shadow-sm">
+    <div class="card-body">
+        <div class="row g-2 align-items-end">
+            <div class="col-12 col-md-3">
+                <label class="form-label">Status</label>
+                <select name="status" class="form-select form-select-sm">
+                    {% for value, label in status_choices %}
+                        <option value="{{ value }}" {% if status == value %}selected{% endif %}>
+                            {{ label }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="col-12 col-md-3">
+                <label class="form-label">Location</label>
+                <select name="location_id" class="form-select form-select-sm">
+                    <option value="">All locations</option>
+                    {% for loc in locations %}
+                        <option value="{{ loc.id }}" {% if location_id|int == loc.id %}selected{% endif %}>
+                            {{ loc.name }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="col-12 col-md-4">
+                <label class="form-label">Search</label>
+                <input
+                    type="text"
+                    name="q"
+                    value="{{ q }}"
+                    class="form-control form-control-sm"
+                    placeholder="Search by name, tag, or serial">
+            </div>
+
+            <div class="col-12 col-md-2 text-md-end">
+                <button type="submit" class="btn btn-sm btn-outline-primary me-1">
+                    Apply
+                </button>
+                <a href="{{ url_for('assets.list_assets') }}" class="btn btn-sm btn-outline-secondary">
+                    Reset
+                </a>
+            </div>
+        </div>
+    </div>
+</form>
+
 <div class="card shadow-sm">
     <div class="card-body">
         {% if assets %}
@@ -40,10 +89,27 @@
                             <td>{{ asset.subcategory.name if asset.subcategory else "-" }}</td>
                             <td>{{ asset.location.name if asset.location else "-" }}</td>
                             <td>
-                                <span class="badge bg-secondary">
-                                    {{ asset.status }}
+                                {% set label_map = {
+                                    "in_use": "In Use",
+                                    "in_stock": "In Stock",
+                                    "under_repair": "Under Repair",
+                                    "retired": "Retired",
+                                    "disposed": "Disposed"
+                                } %}
+                                {% set color_map = {
+                                    "in_use": "primary",
+                                    "in_stock": "success",
+                                    "under_repair": "warning",
+                                    "retired": "secondary",
+                                    "disposed": "dark"
+                                } %}
+                                {% set status_label = label_map.get(asset.status, asset.status) %}
+                                {% set status_color = color_map.get(asset.status, "secondary") %}
+                                <span class="badge bg-{{ status_color }}">
+                                    {{ status_label }}
                                 </span>
                             </td>
+
                             <td>{{ asset.purchase_date or "-" }}</td>
                             <td>{{ asset.warranty_expiry_date or "-" }}</td>
                             <td>
