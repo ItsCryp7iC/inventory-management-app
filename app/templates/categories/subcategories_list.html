@@ -1,44 +1,41 @@
 {% extends "base.html" %}
 
-{% block title %}Categories - IT Inventory{% endblock %}
+{% block title %}Sub-Categories - IT Inventory{% endblock %}
 
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-3">
     <div>
-        <h1 class="h3 mb-0">Categories</h1>
+        <h1 class="h3 mb-0">Sub-Categories</h1>
         <div class="small text-muted">
-            High-level asset classification. Sub-Categories are managed separately.
+            Linked to parent Categories. Used in asset classification.
         </div>
     </div>
-    <div class="d-flex gap-2">
-        <a href="{{ url_for('categories.list_subcategories') }}" class="btn btn-outline-secondary btn-sm">
-            Manage Sub-Categories
-        </a>
-        <a href="{{ url_for('categories.create_category') }}" class="btn btn-primary btn-sm">
-            Add Category
-        </a>
-    </div>
+    <a href="{{ url_for('categories.create_subcategory') }}" class="btn btn-primary btn-sm">
+        Add Sub-Category
+    </a>
 </div>
 
 <div class="card shadow-sm">
     <div class="card-body">
-        {% if categories %}
+        {% if subcategories %}
             <div class="table-responsive">
                 <table class="table table-sm align-middle mb-0">
                     <thead>
                         <tr>
                             <th>Name</th>
+                            <th>Category</th>
                             <th>Description</th>
-                            <th width="120">Actions</th>
+                            <th width="140">Actions</th>
                         </tr>
                     </thead>
                     <tbody>
-                        {% for cat in categories %}
+                        {% for sc in subcategories %}
                         <tr>
-                            <td>{{ cat.name }}</td>
-                            <td>{{ cat.description or '-' }}</td>
+                            <td>{{ sc.name }}</td>
+                            <td>{{ sc.category.name if sc.category else "-" }}</td>
+                            <td>{{ sc.description or "-" }}</td>
                             <td>
-                                <a href="{{ url_for('categories.edit_category', category_id=cat.id) }}"
+                                <a href="{{ url_for('categories.edit_subcategory', subcat_id=sc.id) }}"
                                    class="btn btn-sm btn-outline-secondary">
                                     Edit
                                 </a>
@@ -49,7 +46,7 @@
                 </table>
             </div>
         {% else %}
-            <p class="text-muted mb-0">No categories found.</p>
+            <p class="text-muted mb-0">No sub-categories found.</p>
         {% endif %}
     </div>
 </div>
