@@ -30,6 +30,9 @@ def create_app():
     from .categories import bp as categories_bp
     app.register_blueprint(categories_bp)
 
+    from .vendors import bp as vendors_bp
+    app.register_blueprint(vendors_bp)
+
     # Jinja globals (date/time helpers for dashboard)
     from datetime import date, timedelta
     app.jinja_env.globals["date"] = date

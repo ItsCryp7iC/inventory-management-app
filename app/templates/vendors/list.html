@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+
+{% block title %}Vendors - IT Inventory{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h1 class="h3 mb-0">Vendors</h1>
+    <a href="{{ url_for('vendors.create_vendor') }}" class="btn btn-primary btn-sm">
+        Add Vendor
+    </a>
+</div>
+
+<div class="card shadow-sm">
+    <div class="card-body">
+        {% if vendors %}
+            <div class="table-responsive">
+                <table class="table table-sm align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Email</th>
+                            <th>Phone</th>
+                            <th>Website</th>
+                            <th width="140">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for vendor in vendors %}
+                        <tr>
+                            <td>{{ vendor.name }}</td>
+                            <td>{{ vendor.contact_email or "-" }}</td>
+                            <td>{{ vendor.contact_phone or "-" }}</td>
+                            <td>
+                                {% if vendor.website %}
+                                    <a href="{{ vendor.website }}" target="_blank" class="text-decoration-none">
+                                        {{ vendor.website }}
+                                    </a>
+                                {% else %}
+                                    -
+                                {% endif %}
+                            </td>
+                            <td>
+                                <a href="{{ url_for('vendors.edit_vendor', vendor_id=vendor.id) }}"
+                                   class="btn btn-sm btn-outline-secondary">
+                                    Edit
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <p class="text-muted mb-0">No vendors found.</p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

@@ -60,9 +60,11 @@
                     Locations
                 </a>
 
-                <a href="#" class="list-group-item list-group-item-action">
+                <a href="{{ url_for('vendors.list_vendors') }}"
+                class="list-group-item list-group-item-action{% if request.endpoint and request.endpoint.startswith('vendors.') %} active{% endif %}">
                     Vendors
                 </a>
+
                 <a href="#" class="list-group-item list-group-item-action">
                     Settings
                 </a>
