@@ -51,8 +51,8 @@
                 </a>
                 <a href="#" class="list-group-item list-group-item-action">
                     Categories
-                </a>
-                <a href="#" class="list-group-item list-group-item-action">
+                <a href="{{ url_for('locations.list_locations') }}"
+                class="list-group-item list-group-item-action{% if request.endpoint and request.endpoint.startswith('locations.') %} active{% endif %}">
                     Locations
                 </a>
                 <a href="#" class="list-group-item list-group-item-action">

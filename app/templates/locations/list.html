@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+
+{% block title %}Locations - IT Inventory{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h1 class="h3 mb-0">Locations</h1>
+    <a href="{{ url_for('locations.create_location') }}" class="btn btn-primary btn-sm">
+        Add Location
+    </a>
+</div>
+
+<div class="card shadow-sm">
+    <div class="card-body">
+        {% if locations %}
+            <div class="table-responsive">
+                <table class="table table-sm align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Code</</th>
+                            <th>Status</th>
+                            <th width="140">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for loc in locations %}
+                        <tr>
+                            <td>{{ loc.name }}</td>
+                            <td>{{ loc.code or "-" }}</td>
+                            <td>
+                                {% if loc.is_active %}
+                                    <span class="badge bg-success">Active</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">Disabled</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <a href="{{ url_for('locations.edit_location', location_id=loc.id) }}"
+                                   class="btn btn-sm btn-outline-secondary">
+                                    Edit
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <p class="text-muted mb-0">No locations found.</p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
