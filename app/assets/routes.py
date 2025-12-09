@@ -129,6 +129,53 @@ def edit_asset(asset_id):
     form = AssetForm(obj=asset)
     _populate_form_choices(form)
 
+    if form.validate_on_submit():
+        asset.asset_tag = form.asset_tag.data or None
+        asset.name = form.name.data
+        asset.description = form.description.data or None
+        asset.serial_number = form.serial_number.data or None
+        asset.status = form.status.data
+
+        # dropdowns
+        asset.category_id = _normalize_id(form.category_id.data)
+        asset.subcategory_id = _normalize_id(form.subcategory_id.data)
+        asset.location_id = _normalize_id(form.location_id.data)
+        asset.vendor_id = _normalize_id(form.vendor_id.data)
+
+        # dates / cost
+        asset.purchase_date = form.purchase_date.data
+        asset.warranty_expiry_date = form.warranty_expiry_date.data
+        asset.cost = form.cost.data
+
+        # notes
+        asset.notes = form.notes.data or None
+
+        db.session.commit()
+        flash("Asset updated successfully.", "success")
+        return redirect(url_for("assets.list_assets"))
+
+    if form.errors and request.method == "POST":
+        flash("Please correct the errors in the form.", "danger")
+
+    return render_template(
+        "assets/create.html",
+        form=form,
+        is_edit=True,
+        asset=asset
+    )
+
+
+
+
+@bp.route("/<int:asset_id>")
+def asset_detail(asset_id):
+    asset = Asset.query.get_or_404(asset_id)
+    return render_template("assets/detail.html", asset=asset)
+
+
+    form = AssetForm(obj=asset)
+    _populate_form_choices(form)
+
     # For GET, AssetForm(obj=asset) already pre-fills everything.
     # For POST, WTForms will override with submitted data.
 

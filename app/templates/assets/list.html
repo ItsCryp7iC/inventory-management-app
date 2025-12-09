@@ -83,8 +83,19 @@
                         {% for asset in assets %}
                         <tr>
                             <td>{{ asset.id }}</td>
-                            <td>{{ asset.asset_tag or "-" }}</td>
-                            <td>{{ asset.name }}</td>
+                            <td>
+                                <a href="{{ url_for('assets.asset_detail', asset_id=asset.id) }}" 
+                                class="text-decoration-none">
+                                    {{ asset.asset_tag }}
+                                </a>
+                            </td>
+
+                            <td>
+                                <a href="{{ url_for('assets.asset_detail', asset_id=asset.id) }}" 
+                                class="text-decoration-none">
+                                    {{ asset.name }}
+                                </a>
+                            </td>
                             <td>{{ asset.category.name if asset.category else "-" }}</td>
                             <td>{{ asset.subcategory.name if asset.subcategory else "-" }}</td>
                             <td>{{ asset.location.name if asset.location else "-" }}</td>

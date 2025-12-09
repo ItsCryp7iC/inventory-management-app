@@ -1,0 +1,128 @@
+{% extends "base.html" %}
+
+{% block title %}Asset Detail - {{ asset.asset_tag }}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h1 class="h3 mb-0">
+        {{ asset.asset_tag }} — {{ asset.name }}
+    </h1>
+
+    <a href="{{ url_for('assets.list_assets') }}" class="btn btn-outline-secondary btn-sm">
+        Back to Assets
+    </a>
+</div>
+
+<div class="card shadow-sm mb-4">
+    <div class="card-body">
+        <h5 class="border-bottom pb-2 mb-3">General Information</h5>
+
+        <div class="row mb-2">
+            <div class="col-md-4"><strong>Asset Tag:</strong></div>
+            <div class="col-md-8">{{ asset.asset_tag }}</div>
+        </div>
+
+        <div class="row mb-2">
+            <div class="col-md-4"><strong>Name:</strong></div>
+            <div class="col-md-8">{{ asset.name }}</div>
+        </div>
+
+        <div class="row mb-2">
+            <div class="col-md-4"><strong>Category:</strong></div>
+            <div class="col-md-8">
+                {{ asset.category.name if asset.category else "-" }}
+            </div>
+        </div>
+
+        <div class="row mb-2">
+            <div class="col-md-4"><strong>Sub-Category:</strong></div>
+            <div class="col-md-8">
+                {{ asset.subcategory.name if asset.subcategory else "-" }}
+            </div>
+        </div>
+
+        <div class="row mb-2">
+            <div class="col-md-4"><strong>Location:</strong></div>
+            <div class="col-md-8">
+                {{ asset.location.name if asset.location else "-" }}
+            </div>
+        </div>
+
+        <div class="row mb-2">
+            <div class="col-md-4"><strong>Vendor:</strong></div>
+            <div class="col-md-8">
+                {{ asset.vendor.name if asset.vendor else "-" }}
+            </div>
+        </div>
+
+        <div class="row mb-2">
+            <div class="col-md-4"><strong>Status:</strong></div>
+            <div class="col-md-8">
+                {% set label_map = {
+                    "in_use": "In Use",
+                    "in_stock": "In Stock",
+                    "under_repair": "Under Repair",
+                    "retired": "Retired",
+                    "disposed": "Disposed"
+                } %}
+                {% set color_map = {
+                    "in_use": "primary",
+                    "in_stock": "success",
+                    "under_repair": "warning",
+                    "retired": "secondary",
+                    "disposed": "dark"
+                } %}
+                {% set status_label = label_map.get(asset.status, asset.status) %}
+                {% set status_color = color_map.get(asset.status, "secondary") %}
+                <span class="badge bg-{{ status_color }}">
+                    {{ status_label }}
+                </span>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<div class="card shadow-sm mb-4">
+    <div class="card-body">
+        <h5 class="border-bottom pb-2 mb-3">Purchase Information</h5>
+
+        <div class="row mb-2">
+            <div class="col-md-4"><strong>Purchase Date:</strong></div>
+            <div class="col-md-8">
+                {{ asset.purchase_date or "-" }}
+            </div>
+        </div>
+
+        <div class="row mb-2">
+            <div class="col-md-4"><strong>Purchase Price:</strong></div>
+            <div class="col-md-8">
+                {{ asset.purchase_price or "-" }}
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if asset.notes %}
+<div class="card shadow-sm mb-4">
+    <div class="card-body">
+        <h5 class="border-bottom pb-2 mb-3">Notes</h5>
+        <p>{{ asset.notes }}</p>
+    </div>
+</div>
+{% endif %}
+
+<!-- Future Hooks -->
+<div class="card shadow-sm">
+    <div class="card-body">
+        <h5 class="border-bottom pb-2 mb-3">Actions</h5>
+        <div class="d-flex gap-2">
+            <button class="btn btn-outline-primary btn-sm" disabled>Assign (Coming Soon)</button>
+            <button class="btn btn-outline-warning btn-sm" disabled>Mark as Faulty (Coming Soon)</button>
+            <button class="btn btn-outline-secondary btn-sm" disabled>Transfer (Coming Soon)</button>
+            <button class="btn btn-outline-info btn-sm" disabled>Movement Log (Coming Soon)</button>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
