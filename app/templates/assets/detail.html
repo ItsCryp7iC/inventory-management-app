@@ -83,6 +83,29 @@
     </div>
 </div>
 
+<div class="row mb-2">
+    <div class="col-md-4"><strong>Assigned To:</strong></div>
+    <div class="col-md-8">
+        {% if asset.assigned_to %}
+            {{ asset.assigned_to }}
+            {% if asset.assigned_department %}
+                <span class="text-muted">({{ asset.assigned_department }})</span>
+            {% endif %}
+            {% if asset.assigned_email %}
+                — <a href="mailto:{{ asset.assigned_email }}">{{ asset.assigned_email }}</a>
+            {% endif %}
+            {% if asset.assigned_at %}
+                <div class="small text-muted">
+                    Since {{ asset.assigned_at }}
+                </div>
+            {% endif %}
+        {% else %}
+            <span class="text-muted">Not assigned</span>
+        {% endif %}
+    </div>
+</div>
+
+
 <div class="card shadow-sm mb-4">
     <div class="card-body">
         <h5 class="border-bottom pb-2 mb-3">Purchase Information</h5>
@@ -95,9 +118,9 @@
         </div>
 
         <div class="row mb-2">
-            <div class="col-md-4"><strong>Purchase Price:</strong></div>
+            <div class="col-md-4"><strong>Purchase Cost:</strong></div>
             <div class="col-md-8">
-                {{ asset.purchase_price or "-" }}
+                {{ asset.cost or "-" }}
             </div>
         </div>
     </div>
@@ -142,6 +165,82 @@
             Mark as Disposed
         </button>
     </form>
+</div>
+
+<div class="card shadow-sm">
+    <div class="card-body">
+        <h5 class="border-bottom pb-2 mb-3">Actions</h5>
+        <div class="d-flex flex-wrap gap-2">
+            <!-- Assign / Unassign -->
+            {% if asset.assigned_to %}
+                <form method="post"
+                      action="{{ url_for('assets.unassign_asset', asset_id=asset.id) }}"
+                      class="d-inline">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button type="submit"
+                            class="btn btn-outline-primary btn-sm"
+                            onclick="return confirm('Unassign this asset and return to stock?');">
+                        Unassign Asset
+                    </button>
+                </form>
+            {% else %}
+                <form method="post"
+                      action="{{ url_for('assets.assign_asset', asset_id=asset.id) }}"
+                      class="row g-1 align-items-end">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <div class="col-auto">
+                        <label class="form-label mb-1 small">Assign To</label>
+                        <input type="text" name="assigned_to" class="form-control form-control-sm"
+                               placeholder="Person name" required>
+                    </div>
+                    <div class="col-auto">
+                        <label class="form-label mb-1 small">Department</label>
+                        <input type="text" name="assigned_department" class="form-control form-control-sm"
+                               placeholder="Department">
+                    </div>
+                    <div class="col-auto">
+                        <label class="form-label mb-1 small">Email</label>
+                        <input type="email" name="assigned_email" class="form-control form-control-sm"
+                               placeholder="email@company.com">
+                    </div>
+                    <div class="col-auto">
+                        <button type="submit" class="btn btn-outline-primary btn-sm mt-3">
+                            Assign Asset
+                        </button>
+                    </div>
+                </form>
+            {% endif %}
+
+            <!-- Future features (still disabled) -->
+            <button class="btn btn-outline-warning btn-sm" disabled>Mark as Faulty (Coming Soon)</button>
+            <button class="btn btn-outline-secondary btn-sm" disabled>Transfer (Coming Soon)</button>
+            <button class="btn btn-outline-info btn-sm" disabled>Movement Log (Coming Soon)</button>
+
+            <!-- Retire -->
+            <form method="post"
+                  action="{{ url_for('assets.retire_asset', asset_id=asset.id) }}"
+                  class="d-inline">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit"
+                        class="btn btn-outline-dark btn-sm"
+                        onclick="return confirm('Mark this asset as RETIRED? It will no longer be considered active, but will stay in the records.');">
+                    Mark as Retired
+                </button>
+            </form>
+
+            <!-- Dispose -->
+            <form method="post"
+                  action="{{ url_for('assets.dispose_asset', asset_id=asset.id) }}"
+                  class="d-inline">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit"
+                        class="btn btn-outline-danger btn-sm"
+                        onclick="return confirm('Mark this asset as DISPOSED? This is usually final and should be done only after disposal is verified.');">
+                    Mark as Disposed
+                </button>
+            </form>
+        </div>
+    </div>
 </div>
 
 

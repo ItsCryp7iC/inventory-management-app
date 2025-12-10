@@ -3,6 +3,8 @@ from . import bp
 from app.extensions import db
 from app.models import Asset, Location, Category, SubCategory, Vendor
 from .forms import AssetForm
+from datetime import date
+
 
 
 def _populate_form_choices(form: AssetForm):
@@ -228,4 +230,58 @@ def dispose_asset(asset_id):
     asset.status = "disposed"
     db.session.commit()
     flash("Asset has been marked as disposed.", "success")
+    return redirect(url_for("assets.asset_detail", asset_id=asset.id))
+
+
+@bp.route("/<int:asset_id>/assign", methods=["POST"])
+def assign_asset(asset_id):
+    asset = Asset.query.get_or_404(asset_id)
+
+    # Do not allow assign if retired/disposed
+    if asset.status in ["retired", "disposed"]:
+        flash("Cannot assign a retired or disposed asset.", "danger")
+        return redirect(url_for("assets.asset_detail", asset_id=asset.id))
+
+    assigned_to = request.form.get("assigned_to", "").strip()
+    assigned_department = request.form.get("assigned_department", "").strip()
+    assigned_email = request.form.get("assigned_email", "").strip()
+
+    if not assigned_to:
+        flash("Assignee name is required to assign an asset.", "danger")
+        return redirect(url_for("assets.asset_detail", asset_id=asset.id))
+
+    asset.assigned_to = assigned_to
+    asset.assigned_department = assigned_department or None
+    asset.assigned_email = assigned_email or None
+    asset.assigned_at = date.today()
+
+    # Set status to in_use if it's currently in_stock
+    if asset.status in ["in_stock", "under_repair"]:
+        asset.status = "in_use"
+
+    db.session.commit()
+    flash("Asset has been assigned successfully.", "success")
+    return redirect(url_for("assets.asset_detail", asset_id=asset.id))
+
+
+@bp.route("/<int:asset_id>/unassign", methods=["POST"])
+def unassign_asset(asset_id):
+    asset = Asset.query.get_or_404(asset_id)
+
+    if not asset.assigned_to and not asset.assigned_at:
+        flash("This asset is not currently assigned.", "warning")
+        return redirect(url_for("assets.asset_detail", asset_id=asset.id))
+
+    # Clear assignment info
+    asset.assigned_to = None
+    asset.assigned_department = None
+    asset.assigned_email = None
+    asset.assigned_at = None
+
+    # Move it back to stock only if not retired/disposed/under_repair
+    if asset.status == "in_use":
+        asset.status = "in_stock"
+
+    db.session.commit()
+    flash("Asset has been unassigned and returned to stock.", "success")
     return redirect(url_for("assets.asset_detail", asset_id=asset.id))

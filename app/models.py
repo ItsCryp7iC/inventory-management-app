@@ -115,5 +115,12 @@ class Asset(TimestampMixin, db.Model):
 
     notes = db.Column(db.Text, nullable=True)
 
+        # assignment fields
+    assigned_to = db.Column(db.String(150), nullable=True)          # Person name
+    assigned_department = db.Column(db.String(150), nullable=True)  # Department/team
+    assigned_email = db.Column(db.String(150), nullable=True)       # Email (if relevant)
+    assigned_at = db.Column(db.Date, nullable=True)                 # Date of assignment
+
+
     def __repr__(self):
         return f"<Asset {self.name} ({self.status})>"
