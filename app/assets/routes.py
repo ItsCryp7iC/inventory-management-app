@@ -202,3 +202,30 @@ def asset_detail(asset_id):
         flash("Please correct the errors in the form.", "danger")
 
     return render_template("assets/create.html", form=form, is_edit=True, asset=asset)
+
+@bp.route("/<int:asset_id>/retire", methods=["POST"])
+def retire_asset(asset_id):
+    asset = Asset.query.get_or_404(asset_id)
+
+    if asset.status in ["retired", "disposed"]:
+        flash("Asset is already retired or disposed.", "warning")
+        return redirect(url_for("assets.asset_detail", asset_id=asset.id))
+
+    asset.status = "retired"
+    db.session.commit()
+    flash("Asset has been marked as retired.", "success")
+    return redirect(url_for("assets.asset_detail", asset_id=asset.id))
+
+
+@bp.route("/<int:asset_id>/dispose", methods=["POST"])
+def dispose_asset(asset_id):
+    asset = Asset.query.get_or_404(asset_id)
+
+    if asset.status == "disposed":
+        flash("Asset is already disposed.", "warning")
+        return redirect(url_for("assets.asset_detail", asset_id=asset.id))
+
+    asset.status = "disposed"
+    db.session.commit()
+    flash("Asset has been marked as disposed.", "success")
+    return redirect(url_for("assets.asset_detail", asset_id=asset.id))
