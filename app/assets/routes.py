@@ -1,7 +1,7 @@
 from flask import render_template, redirect, url_for, flash, request
 from . import bp
 from app.extensions import db
-from app.models import Asset, Location, Category, SubCategory, Vendor
+from app.models import Asset, Location, Category, SubCategory, Vendor, AssetEvent
 from .forms import AssetForm
 from datetime import date
 
@@ -30,6 +30,27 @@ def _populate_form_choices(form: AssetForm):
 
 def _normalize_id(value):
     return value if value and value != 0 else None
+
+def log_asset_event(
+    asset: Asset,
+    event_type: str,
+    note: str | None = None,
+    from_status: str | None = None,
+    to_status: str | None = None,
+    from_location_id: int | None = None,
+    to_location_id: int | None = None,
+):
+    event = AssetEvent(
+        asset_id=asset.id,
+        event_type=event_type,
+        note=note,
+        from_status=from_status,
+        to_status=to_status,
+        from_location_id=from_location_id,
+        to_location_id=to_location_id,
+    )
+    db.session.add(event)
+    # Do NOT commit here – caller will commit transaction
 
 
 @bp.route("/")
@@ -86,15 +107,8 @@ def create_asset():
     form = AssetForm()
     _populate_form_choices(form)
 
-    # Default status
-    if request.method == "GET" and not form.status.data:
-        form.status.data = "in_use"
-
-    # Default location = Mirpur DOHS Office
-    if request.method == "GET":
-        mirpur = Location.query.filter_by(name="Mirpur DOHS Office").first()
-        if mirpur:
-            form.location_id.data = mirpur.id
+    # Default status / location logic you already had...
+    # (leave that part as-is)
 
     if form.validate_on_submit():
         asset = Asset(
@@ -114,6 +128,16 @@ def create_asset():
         )
 
         db.session.add(asset)
+        db.session.flush()  # ensure asset.id exists before logging
+
+        log_asset_event(
+            asset=asset,
+            event_type="created",
+            note="Asset created",
+            to_status=asset.status,
+            to_location_id=asset.location_id,
+        )
+
         db.session.commit()
         flash("Asset created successfully.", "success")
         return redirect(url_for("assets.list_assets"))
@@ -172,8 +196,13 @@ def edit_asset(asset_id):
 @bp.route("/<int:asset_id>")
 def asset_detail(asset_id):
     asset = Asset.query.get_or_404(asset_id)
-    return render_template("assets/detail.html", asset=asset)
-
+    events = (
+        AssetEvent.query
+        .filter_by(asset_id=asset.id)
+        .order_by(AssetEvent.created_at.desc())
+        .all()
+    )
+    return render_template("assets/detail.html", asset=asset, events=events)
 
     form = AssetForm(obj=asset)
     _populate_form_choices(form)
@@ -203,8 +232,6 @@ def asset_detail(asset_id):
     if form.errors and request.method == "POST":
         flash("Please correct the errors in the form.", "danger")
 
-    return render_template("assets/create.html", form=form, is_edit=True, asset=asset)
-
 @bp.route("/<int:asset_id>/retire", methods=["POST"])
 def retire_asset(asset_id):
     asset = Asset.query.get_or_404(asset_id)
@@ -213,7 +240,21 @@ def retire_asset(asset_id):
         flash("Asset is already retired or disposed.", "warning")
         return redirect(url_for("assets.asset_detail", asset_id=asset.id))
 
+    old_status = asset.status
+    old_location_id = asset.location_id
+
     asset.status = "retired"
+
+    log_asset_event(
+        asset=asset,
+        event_type="retire",
+        note="Asset marked as retired",
+        from_status=old_status,
+        to_status=asset.status,
+        from_location_id=old_location_id,
+        to_location_id=asset.location_id,
+    )
+
     db.session.commit()
     flash("Asset has been marked as retired.", "success")
     return redirect(url_for("assets.asset_detail", asset_id=asset.id))
@@ -227,17 +268,31 @@ def dispose_asset(asset_id):
         flash("Asset is already disposed.", "warning")
         return redirect(url_for("assets.asset_detail", asset_id=asset.id))
 
+    old_status = asset.status
+    old_location_id = asset.location_id
+
     asset.status = "disposed"
+
+    log_asset_event(
+        asset=asset,
+        event_type="dispose",
+        note="Asset marked as disposed",
+        from_status=old_status,
+        to_status=asset.status,
+        from_location_id=old_location_id,
+        to_location_id=asset.location_id,
+    )
+
     db.session.commit()
     flash("Asset has been marked as disposed.", "success")
     return redirect(url_for("assets.asset_detail", asset_id=asset.id))
+
 
 
 @bp.route("/<int:asset_id>/assign", methods=["POST"])
 def assign_asset(asset_id):
     asset = Asset.query.get_or_404(asset_id)
 
-    # Do not allow assign if retired/disposed
     if asset.status in ["retired", "disposed"]:
         flash("Cannot assign a retired or disposed asset.", "danger")
         return redirect(url_for("assets.asset_detail", asset_id=asset.id))
@@ -250,18 +305,38 @@ def assign_asset(asset_id):
         flash("Assignee name is required to assign an asset.", "danger")
         return redirect(url_for("assets.asset_detail", asset_id=asset.id))
 
+    old_status = asset.status
+    old_location_id = asset.location_id
+
     asset.assigned_to = assigned_to
     asset.assigned_department = assigned_department or None
     asset.assigned_email = assigned_email or None
     asset.assigned_at = date.today()
 
-    # Set status to in_use if it's currently in_stock
     if asset.status in ["in_stock", "under_repair"]:
         asset.status = "in_use"
+
+    # log event
+    note_parts = [f"Assigned to {assigned_to}"]
+    if assigned_department:
+        note_parts.append(f"({assigned_department})")
+    if assigned_email:
+        note_parts.append(f"<{assigned_email}>")
+
+    log_asset_event(
+        asset=asset,
+        event_type="assign",
+        note=" ".join(note_parts),
+        from_status=old_status,
+        to_status=asset.status,
+        from_location_id=old_location_id,
+        to_location_id=asset.location_id,
+    )
 
     db.session.commit()
     flash("Asset has been assigned successfully.", "success")
     return redirect(url_for("assets.asset_detail", asset_id=asset.id))
+
 
 
 @bp.route("/<int:asset_id>/unassign", methods=["POST"])
@@ -272,15 +347,27 @@ def unassign_asset(asset_id):
         flash("This asset is not currently assigned.", "warning")
         return redirect(url_for("assets.asset_detail", asset_id=asset.id))
 
-    # Clear assignment info
+    old_status = asset.status
+    old_location_id = asset.location_id
+    previous_assignee = asset.assigned_to
+
     asset.assigned_to = None
     asset.assigned_department = None
     asset.assigned_email = None
     asset.assigned_at = None
 
-    # Move it back to stock only if not retired/disposed/under_repair
     if asset.status == "in_use":
         asset.status = "in_stock"
+
+    log_asset_event(
+        asset=asset,
+        event_type="unassign",
+        note=f"Unassigned from {previous_assignee}" if previous_assignee else "Unassigned",
+        from_status=old_status,
+        to_status=asset.status,
+        from_location_id=old_location_id,
+        to_location_id=asset.location_id,
+    )
 
     db.session.commit()
     flash("Asset has been unassigned and returned to stock.", "success")

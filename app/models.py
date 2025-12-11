@@ -1,4 +1,6 @@
 from .extensions import db
+from datetime import datetime
+
 
 
 class TimestampMixin:
@@ -121,6 +123,35 @@ class Asset(TimestampMixin, db.Model):
     assigned_email = db.Column(db.String(150), nullable=True)       # Email (if relevant)
     assigned_at = db.Column(db.Date, nullable=True)                 # Date of assignment
 
-
+    events = db.relationship(
+        "AssetEvent",
+        backref="asset",
+        lazy="dynamic",
+        order_by="AssetEvent.created_at.desc()",
+        cascade="all, delete-orphan",
+    )  
+    
     def __repr__(self):
         return f"<Asset {self.name} ({self.status})>"
+
+
+class AssetEvent(db.Model):
+    __tablename__ = "asset_events"
+
+    id = db.Column(db.Integer, primary_key=True)
+
+    asset_id = db.Column(db.Integer, db.ForeignKey("assets.id"), nullable=False)
+
+    event_type = db.Column(db.String(50), nullable=False)  
+    note = db.Column(db.Text, nullable=True)
+
+    from_status = db.Column(db.String(50), nullable=True)
+    to_status = db.Column(db.String(50), nullable=True)
+
+    from_location_id = db.Column(db.Integer, db.ForeignKey("locations.id"), nullable=True)
+    to_location_id = db.Column(db.Integer, db.ForeignKey("locations.id"), nullable=True)
+
+    created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+
+    def __repr__(self):
+        return f"<AssetEvent {self.event_type} for Asset {self.asset_id} at {self.created_at}>"

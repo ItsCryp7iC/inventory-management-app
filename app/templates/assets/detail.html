@@ -167,6 +167,52 @@
     </form>
 </div>
 
+{% if events %}
+<div class="card shadow-sm mb-4">
+    <div class="card-body">
+        <h5 class="border-bottom pb-2 mb-3">Movement & History</h5>
+
+        <div class="table-responsive">
+            <table class="table table-sm align-middle mb-0">
+                <thead>
+                    <tr>
+                        <th>Date / Time</th>
+                        <th>Event</th>
+                        <th>Status Change</th>
+                        <th>Location Change</th>
+                        <th>Details</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for ev in events %}
+                    <tr>
+                        <td>{{ ev.created_at }}</td>
+                        <td>{{ ev.event_type }}</td>
+                        <td>
+                            {% if ev.from_status or ev.to_status %}
+                                {{ ev.from_status or "-" }} → {{ ev.to_status or "-" }}
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if ev.from_location_id or ev.to_location_id %}
+                                {{ ev.from_location_id or "-" }} → {{ ev.to_location_id or "-" }}
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
+                        <td>{{ ev.note or "-" }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+
 <div class="card shadow-sm">
     <div class="card-body">
         <h5 class="border-bottom pb-2 mb-3">Actions</h5>
