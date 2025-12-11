@@ -153,5 +153,18 @@ class AssetEvent(db.Model):
 
     created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
 
+    from_location = db.relationship(
+        "Location",
+        foreign_keys=[from_location_id],
+        lazy="joined"
+    )
+
+    to_location = db.relationship(
+        "Location",
+        foreign_keys=[to_location_id],
+        lazy="joined"
+    )
+
+
     def __repr__(self):
         return f"<AssetEvent {self.event_type} for Asset {self.asset_id} at {self.created_at}>"

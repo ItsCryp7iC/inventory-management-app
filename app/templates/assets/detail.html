@@ -192,22 +192,62 @@
                     {% for ev in events %}
                     <tr>
                         <td>{{ ev.created_at }}</td>
-                        <td>{{ ev.event_type }}</td>
                         <td>
+                            {% set type_map = {
+                                "created": "Created",
+                                "assign": "Assigned",
+                                "unassign": "Unassigned",
+                                "move": "Moved",
+                                "retire": "Retired",
+                                "dispose": "Disposed"
+                            } %}
+                            {{ type_map.get(ev.event_type, ev.event_type) }}
+                        </td>
+
+                        <td>
+                            {% set status_labels = {
+                                "in_use": "In Use",
+                                "in_stock": "In Stock",
+                                "under_repair": "Under Repair",
+                                "retired": "Retired",
+                                "disposed": "Disposed"
+                            } %}
+
+                            {% set status_colors = {
+                                "in_use": "primary",
+                                "in_stock": "success",
+                                "under_repair": "warning",
+                                "retired": "secondary",
+                                "disposed": "dark"
+                            } %}
+
                             {% if ev.from_status or ev.to_status %}
-                                {{ ev.from_status or "-" }} → {{ ev.to_status or "-" }}
+                                <span class="badge bg-{{ status_colors.get(ev.from_status, 'secondary') }}">
+                                    {{ status_labels.get(ev.from_status, ev.from_status or "-") }}
+                                </span>
+                                →
+                                <span class="badge bg-{{ status_colors.get(ev.to_status, 'secondary') }}">
+                                    {{ status_labels.get(ev.to_status, ev.to_status or "-") }}
+                                </span>
                             {% else %}
                                 -
                             {% endif %}
                         </td>
+
                         <td>
-                            {% if ev.from_location_id or ev.to_location_id %}
-                                {{ ev.from_location_id or "-" }} → {{ ev.to_location_id or "-" }}
+                            {% if ev.from_location or ev.to_location %}
+                                {{ ev.from_location.name if ev.from_location else "-" }}
+                                →
+                                {{ ev.to_location.name if ev.to_location else "-" }}
                             {% else %}
                                 -
                             {% endif %}
                         </td>
-                        <td>{{ ev.note or "-" }}</td>
+
+                        <td style="white-space: pre-line;">
+                            {{ ev.note or "-" }}
+                        </td>
+
                     </tr>
                     {% endfor %}
                 </tbody>
