@@ -4,6 +4,7 @@ from app.extensions import db
 from app.models import Asset, Location, Category, SubCategory, Vendor, AssetEvent
 from .forms import AssetForm
 from datetime import date
+from flask_login import login_required
 
 
 
@@ -54,6 +55,7 @@ def log_asset_event(
 
 
 @bp.route("/")
+@login_required
 def list_assets():
     status = request.args.get("status", "").strip()
     location_id = request.args.get("location_id", "").strip()
@@ -103,6 +105,7 @@ def list_assets():
 
 
 @bp.route("/new", methods=["GET", "POST"])
+@login_required
 def create_asset():
     form = AssetForm()
     _populate_form_choices(form)
@@ -149,6 +152,7 @@ def create_asset():
 
 
 @bp.route("/<int:asset_id>/edit", methods=["GET", "POST"])
+@login_required
 def edit_asset(asset_id):
     asset = Asset.query.get_or_404(asset_id)
 
@@ -194,6 +198,7 @@ def edit_asset(asset_id):
 
 
 @bp.route("/<int:asset_id>")
+@login_required
 def asset_detail(asset_id):
     asset = Asset.query.get_or_404(asset_id)
     events = (
@@ -233,6 +238,7 @@ def asset_detail(asset_id):
         flash("Please correct the errors in the form.", "danger")
 
 @bp.route("/<int:asset_id>/retire", methods=["POST"])
+@login_required
 def retire_asset(asset_id):
     asset = Asset.query.get_or_404(asset_id)
 
@@ -261,6 +267,7 @@ def retire_asset(asset_id):
 
 
 @bp.route("/<int:asset_id>/dispose", methods=["POST"])
+@login_required
 def dispose_asset(asset_id):
     asset = Asset.query.get_or_404(asset_id)
 
@@ -290,6 +297,7 @@ def dispose_asset(asset_id):
 
 
 @bp.route("/<int:asset_id>/assign", methods=["POST"])
+@login_required
 def assign_asset(asset_id):
     asset = Asset.query.get_or_404(asset_id)
 
@@ -340,6 +348,7 @@ def assign_asset(asset_id):
 
 
 @bp.route("/<int:asset_id>/unassign", methods=["POST"])
+@login_required
 def unassign_asset(asset_id):
     asset = Asset.query.get_or_404(asset_id)
 
@@ -374,6 +383,7 @@ def unassign_asset(asset_id):
     return redirect(url_for("assets.asset_detail", asset_id=asset.id))
 
 @bp.route("/<int:asset_id>/repair/start", methods=["GET", "POST"])
+@login_required
 def start_repair(asset_id):
     asset = Asset.query.get_or_404(asset_id)
 
@@ -434,6 +444,7 @@ def start_repair(asset_id):
 
 
 @bp.route("/<int:asset_id>/repair/complete", methods=["GET", "POST"])
+@login_required
 def complete_repair(asset_id):
     asset = Asset.query.get_or_404(asset_id)
 
@@ -501,6 +512,7 @@ def complete_repair(asset_id):
 
 
 @bp.route("/<int:asset_id>/move", methods=["GET", "POST"])
+@login_required
 def move_asset(asset_id):
     asset = Asset.query.get_or_404(asset_id)
 

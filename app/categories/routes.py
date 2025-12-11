@@ -6,6 +6,7 @@ from app.models import Category, SubCategory
 from flask_wtf import FlaskForm
 from wtforms import StringField, TextAreaField, SubmitField, SelectField
 from wtforms.validators import DataRequired, Length, Optional
+from flask_login import login_required
 
 
 # -----------------------------
@@ -37,6 +38,7 @@ def _category_choices():
 # Category List
 # -----------------------------
 @bp.route("/")
+@login_required
 def list_categories():
     categories = Category.query.order_by(Category.name.asc()).all()
     return render_template("categories/list.html", categories=categories)
@@ -46,6 +48,7 @@ def list_categories():
 # Category Create
 # -----------------------------
 @bp.route("/new", methods=["GET", "POST"])
+@login_required
 def create_category():
     form = CategoryForm()
 
@@ -66,6 +69,7 @@ def create_category():
 # Category Edit
 # -----------------------------
 @bp.route("/<int:category_id>/edit", methods=["GET", "POST"])
+@login_required
 def edit_category(category_id):
     cat = Category.query.get_or_404(category_id)
     form = CategoryForm(obj=cat)
@@ -84,6 +88,7 @@ def edit_category(category_id):
 # Sub-Category List
 # -----------------------------
 @bp.route("/subcategories")
+@login_required
 def list_subcategories():
     subcategories = (
         SubCategory.query
@@ -98,6 +103,7 @@ def list_subcategories():
 # Sub-Category Create
 # -----------------------------
 @bp.route("/subcategories/new", methods=["GET", "POST"])
+@login_required
 def create_subcategory():
     choices = _category_choices()
     if not choices:
@@ -125,6 +131,7 @@ def create_subcategory():
 # Sub-Category Edit
 # -----------------------------
 @bp.route("/subcategories/<int:subcat_id>/edit", methods=["GET", "POST"])
+@login_required
 def edit_subcategory(subcat_id):
     subcat = SubCategory.query.get_or_404(subcat_id)
 

@@ -34,6 +34,13 @@
             >
                 Toggle theme
             </button>
+            
+            {% if current_user.is_authenticated %}
+                <span class="small text-muted">Hello, {{ current_user.username }}</span>
+                <a href="{{ url_for('auth.logout') }}" class="btn btn-outline-danger btn-sm">Logout</a>
+            {% else %}
+                <a href="{{ url_for('auth.login') }}" class="btn btn-outline-primary btn-sm">Login</a>
+            {% endif %}
         </div>
     </div>
 </nav>

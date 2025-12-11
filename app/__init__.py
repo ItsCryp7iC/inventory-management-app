@@ -1,6 +1,6 @@
 from flask import Flask
 
-from .extensions import db, migrate, csrf
+from .extensions import init_extensions   # IMPORTANT: import the initializer
 
 
 def create_app():
@@ -9,15 +9,13 @@ def create_app():
     # Load config
     app.config.from_object("config.Config")
 
-    # Init extensions
-    db.init_app(app)
-    migrate.init_app(app, db)
-    csrf.init_app(app)
+    # Init ALL extensions (db, migrate, csrf, login_manager, context_processor)
+    init_extensions(app)
 
-    # Import models so Flask-Migrate can see them
+    # Import models so Flask-Migrate can detect them
     from . import models  # noqa
 
-    # Register blueprints
+    # Register blueprints (AFTER extensions are initialized)
     from .main import bp as main_bp
     app.register_blueprint(main_bp)
 
@@ -33,7 +31,10 @@ def create_app():
     from .vendors import bp as vendors_bp
     app.register_blueprint(vendors_bp)
 
-    # Jinja globals (date/time helpers for dashboard)
+    from .auth import bp as auth_bp
+    app.register_blueprint(auth_bp)
+
+    # Global Jinja helpers
     from datetime import date, timedelta
     app.jinja_env.globals["date"] = date
     app.jinja_env.globals["timedelta"] = timedelta

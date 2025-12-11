@@ -1,11 +1,13 @@
-from datetime import date, timedelta
+from flask_login import login_required
 
+from datetime import date, timedelta
 from flask import render_template
 from . import bp
 from app.models import Asset
 
 
 @bp.route("/")
+@login_required
 def index():
     # Basic stats
     total_assets = Asset.query.count()

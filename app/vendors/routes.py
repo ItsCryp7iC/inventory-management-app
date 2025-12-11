@@ -6,7 +6,7 @@ from app.models import Vendor
 from flask_wtf import FlaskForm
 from wtforms import StringField, TextAreaField, SubmitField
 from wtforms.validators import DataRequired, Length, Optional
-
+from flask_login import login_required
 
 class VendorForm(FlaskForm):
     name = StringField("Vendor Name", validators=[DataRequired(), Length(max=150)])
@@ -18,12 +18,14 @@ class VendorForm(FlaskForm):
 
 
 @bp.route("/")
+@login_required
 def list_vendors():
     vendors = Vendor.query.order_by(Vendor.name.asc()).all()
     return render_template("vendors/list.html", vendors=vendors)
 
 
 @bp.route("/new", methods=["GET", "POST"])
+@login_required
 def create_vendor():
     form = VendorForm()
 
@@ -44,6 +46,7 @@ def create_vendor():
 
 
 @bp.route("/<int:vendor_id>/edit", methods=["GET", "POST"])
+@login_required
 def edit_vendor(vendor_id):
     vendor = Vendor.query.get_or_404(vendor_id)
     form = VendorForm(obj=vendor)
