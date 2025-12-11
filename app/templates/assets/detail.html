@@ -140,7 +140,12 @@
     <!-- Future features, still disabled -->
     <button class="btn btn-outline-primary btn-sm" disabled>Assign (Coming Soon)</button>
     <button class="btn btn-outline-warning btn-sm" disabled>Mark as Faulty (Coming Soon)</button>
-    <button class="btn btn-outline-secondary btn-sm" disabled>Transfer (Coming Soon)</button>
+    
+    <a href="{{ url_for('assets.move_asset', asset_id=asset.id) }}"
+    class="btn btn-outline-secondary btn-sm">
+        Move Asset
+    </a>
+
     <button class="btn btn-outline-info btn-sm" disabled>Movement Log (Coming Soon)</button>
 
     <!-- Retire / Dispose are active actions -->

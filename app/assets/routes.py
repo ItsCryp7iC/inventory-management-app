@@ -372,3 +372,60 @@ def unassign_asset(asset_id):
     db.session.commit()
     flash("Asset has been unassigned and returned to stock.", "success")
     return redirect(url_for("assets.asset_detail", asset_id=asset.id))
+
+
+@bp.route("/<int:asset_id>/move", methods=["GET", "POST"])
+def move_asset(asset_id):
+    asset = Asset.query.get_or_404(asset_id)
+
+    locations = Location.query.order_by(Location.name).all()
+
+    if request.method == "POST":
+        new_location_id = request.form.get("new_location_id", "").strip()
+        reason = request.form.get("reason", "").strip()
+        reference = request.form.get("reference", "").strip()
+
+        if not new_location_id.isdigit():
+            flash("Please select a valid location.", "danger")
+            return redirect(url_for("assets.move_asset", asset_id=asset.id))
+
+        new_location_id = int(new_location_id)
+
+        if new_location_id == asset.location_id:
+            flash("Asset is already in this location.", "warning")
+            return redirect(url_for("assets.move_asset", asset_id=asset.id))
+
+        old_location_id = asset.location_id
+
+        # Update asset location
+        asset.location_id = new_location_id
+
+        # Build event note
+        note_parts = [f"Moved from LocationID {old_location_id} to {new_location_id}"]
+        if reason:
+            note_parts.append(f"Reason: {reason}")
+        if reference:
+            note_parts.append(f"Ref: {reference}")
+
+        note = " | ".join(note_parts)
+
+        # Log event
+        log_asset_event(
+            asset=asset,
+            event_type="move",
+            note=note,
+            from_location_id=old_location_id,
+            to_location_id=new_location_id,
+            from_status=asset.status,
+            to_status=asset.status,
+        )
+
+        db.session.commit()
+        flash("Asset moved successfully.", "success")
+        return redirect(url_for("assets.asset_detail", asset_id=asset.id))
+
+    return render_template(
+        "assets/move.html",
+        asset=asset,
+        locations=locations
+    )

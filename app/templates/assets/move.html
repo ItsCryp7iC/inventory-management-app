@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+
+{% block title %}Move Asset - {{ asset.asset_tag }}{% endblock %}
+
+{% block content %}
+<h1 class="h3 mb-3">Move Asset</h1>
+
+<div class="card shadow-sm">
+    <div class="card-body">
+
+        <h5 class="mb-3">Current Location: 
+            <span class="text-primary fw-bold">{{ asset.location.name if asset.location else "Unassigned" }}</span>
+        </h5>
+
+        <form method="post">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+            <div class="mb-3">
+                <label class="form-label">New Location</label>
+                <select name="new_location_id" class="form-select" required>
+                    <option value="">-- Select Location --</option>
+                    {% for loc in locations %}
+                        <option value="{{ loc.id }}">{{ loc.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Reason for Movement</label>
+                <textarea name="reason" class="form-control" rows="3" placeholder="Why is this asset being moved?" required></textarea>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Reference (Optional)</label>
+                <input type="text" name="reference" class="form-control" placeholder="Ticket No, Work Order No, Person Requesting, etc.">
+            </div>
+
+            <button type="submit" class="btn btn-primary">Move Asset</button>
+            <a href="{{ url_for('assets.asset_detail', asset_id=asset.id) }}"
+               class="btn btn-secondary">
+                Cancel
+            </a>
+        </form>
+
+    </div>
+</div>
+
+{% endblock %}
