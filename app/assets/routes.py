@@ -373,6 +373,132 @@ def unassign_asset(asset_id):
     flash("Asset has been unassigned and returned to stock.", "success")
     return redirect(url_for("assets.asset_detail", asset_id=asset.id))
 
+@bp.route("/<int:asset_id>/repair/start", methods=["GET", "POST"])
+def start_repair(asset_id):
+    asset = Asset.query.get_or_404(asset_id)
+
+    if asset.status in ["retired", "disposed"]:
+        flash("Cannot send a retired or disposed asset to repair.", "danger")
+        return redirect(url_for("assets.asset_detail", asset_id=asset.id))
+
+    if asset.status == "under_repair":
+        flash("Asset is already under repair.", "warning")
+        return redirect(url_for("assets.asset_detail", asset_id=asset.id))
+
+    if request.method == "POST":
+        repair_vendor = request.form.get("repair_vendor", "").strip()
+        repair_reference = request.form.get("repair_reference", "").strip()
+        repair_notes = request.form.get("repair_notes", "").strip()
+
+        old_status = asset.status
+        old_location_id = asset.location_id
+
+        asset.repair_opened_at = date.today()
+        asset.repair_vendor = repair_vendor or None
+        asset.repair_reference = repair_reference or None
+        asset.repair_notes = repair_notes or None
+
+        # Move asset to under_repair
+        asset.status = "under_repair"
+
+        # Clear assignment when going to repair
+        if asset.assigned_to:
+            asset.assigned_to = None
+            asset.assigned_department = None
+            asset.assigned_email = None
+            asset.assigned_at = None
+
+        note_parts = ["Sent to repair"]
+        if repair_vendor:
+            note_parts.append(f"Vendor: {repair_vendor}")
+        if repair_reference:
+            note_parts.append(f"Ref: {repair_reference}")
+        if repair_notes:
+            note_parts.append(f"Notes: {repair_notes}")
+
+        log_asset_event(
+            asset=asset,
+            event_type="repair_start",
+            note=" | ".join(note_parts),
+            from_status=old_status,
+            to_status=asset.status,
+            from_location_id=old_location_id,
+            to_location_id=asset.location_id,
+        )
+
+        db.session.commit()
+        flash("Asset marked as under repair.", "success")
+        return redirect(url_for("assets.asset_detail", asset_id=asset.id))
+
+    return render_template("assets/repair_start.html", asset=asset)
+
+
+@bp.route("/<int:asset_id>/repair/complete", methods=["GET", "POST"])
+def complete_repair(asset_id):
+    asset = Asset.query.get_or_404(asset_id)
+
+    if asset.status != "under_repair":
+        flash("This asset is not currently under repair.", "warning")
+        return redirect(url_for("assets.asset_detail", asset_id=asset.id))
+
+    if request.method == "POST":
+        outcome = request.form.get("outcome", "").strip()  # "back_to_stock" or "disposed"
+        repair_cost = request.form.get("repair_cost", "").strip()
+        repair_notes = request.form.get("repair_notes", "").strip()
+
+        old_status = asset.status
+        old_location_id = asset.location_id
+
+        # Parse cost
+        cost_value = None
+        if repair_cost:
+            try:
+                cost_value = float(repair_cost)
+            except ValueError:
+                flash("Repair cost must be a number.", "danger")
+                return redirect(url_for("assets.complete_repair", asset_id=asset.id))
+
+        asset.repair_closed_at = date.today()
+        if cost_value is not None:
+            asset.repair_cost = cost_value
+        if repair_notes:
+            # Append or overwrite; for now overwrite
+            asset.repair_notes = repair_notes
+
+        if outcome == "disposed":
+            asset.status = "disposed"
+        else:
+            # Default: back to stock
+            asset.status = "in_stock"
+
+        note_parts = ["Repair completed"]
+        if outcome == "disposed":
+            note_parts.append("Outcome: Asset disposed after repair")
+        else:
+            note_parts.append("Outcome: Returned to stock")
+
+        if repair_cost:
+            note_parts.append(f"Cost: {repair_cost}")
+        if repair_notes:
+            note_parts.append(f"Notes: {repair_notes}")
+
+        log_asset_event(
+            asset=asset,
+            event_type="repair_end",
+            note=" | ".join(note_parts),
+            from_status=old_status,
+            to_status=asset.status,
+            from_location_id=old_location_id,
+            to_location_id=asset.location_id,
+        )
+
+        db.session.commit()
+        flash("Repair completed and status updated.", "success")
+        return redirect(url_for("assets.asset_detail", asset_id=asset.id))
+
+    return render_template("assets/repair_complete.html", asset=asset)
+
+
 
 @bp.route("/<int:asset_id>/move", methods=["GET", "POST"])
 def move_asset(asset_id):

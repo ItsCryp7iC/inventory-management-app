@@ -106,6 +106,56 @@
 </div>
 
 
+{% if asset.repair_opened_at or asset.status == "under_repair" %}
+<div class="card shadow-sm mb-4">
+    <div class="card-body">
+        <h5 class="border-bottom pb-2 mb-3">Repair Information</h5>
+
+        <div class="row mb-2">
+            <div class="col-md-4"><strong>Status:</strong></div>
+            <div class="col-md-8">
+                {% if asset.status == "under_repair" %}
+                    <span class="badge bg-warning text-dark">Under Repair</span>
+                {% else %}
+                    <span class="badge bg-secondary">Not under repair</span>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="row mb-2">
+            <div class="col-md-4"><strong>Repair Vendor:</strong></div>
+            <div class="col-md-8">{{ asset.repair_vendor or "-" }}</div>
+        </div>
+
+        <div class="row mb-2">
+            <div class="col-md-4"><strong>Reference:</strong></div>
+            <div class="col-md-8">{{ asset.repair_reference or "-" }}</div>
+        </div>
+
+        <div class="row mb-2">
+            <div class="col-md-4"><strong>Opened At:</strong></div>
+            <div class="col-md-8">{{ asset.repair_opened_at or "-" }}</div>
+        </div>
+
+        <div class="row mb-2">
+            <div class="col-md-4"><strong>Closed At:</strong></div>
+            <div class="col-md-8">{{ asset.repair_closed_at or "-" }}</div>
+        </div>
+
+        <div class="row mb-2">
+            <div class="col-md-4"><strong>Repair Cost:</strong></div>
+            <div class="col-md-8">{{ asset.repair_cost or "-" }}</div>
+        </div>
+
+        <div class="row mb-2">
+            <div class="col-md-4"><strong>Repair Notes:</strong></div>
+            <div class="col-md-8">{{ asset.repair_notes or "-" }}</div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+
 <div class="card shadow-sm mb-4">
     <div class="card-body">
         <h5 class="border-bottom pb-2 mb-3">Purchase Information</h5>
@@ -139,7 +189,19 @@
 <div class="d-flex flex-wrap gap-2">
     <!-- Future features, still disabled -->
     <button class="btn btn-outline-primary btn-sm" disabled>Assign (Coming Soon)</button>
-    <button class="btn btn-outline-warning btn-sm" disabled>Mark as Faulty (Coming Soon)</button>
+        
+    {% if asset.status == "under_repair" %}
+        <a href="{{ url_for('assets.complete_repair', asset_id=asset.id) }}"
+        class="btn btn-outline-success btn-sm">
+            Complete Repairsd
+        </a>
+    {% elif asset.status not in ["retired", "disposed"] %}
+        <a href="{{ url_for('assets.start_repair', asset_id=asset.id) }}"
+        class="btn btn-outline-warning btn-sm">
+            Mark as Faulty / Send to Repair
+        </a>
+    {% endif %}
+
     
     <a href="{{ url_for('assets.move_asset', asset_id=asset.id) }}"
     class="btn btn-outline-secondary btn-sm">
@@ -199,8 +261,11 @@
                                 "unassign": "Unassigned",
                                 "move": "Moved",
                                 "retire": "Retired",
-                                "dispose": "Disposed"
+                                "dispose": "Disposed",
+                                "repair_start": "Repair Started",
+                                "repair_end": "Repair Completed"
                             } %}
+
                             {{ type_map.get(ev.event_type, ev.event_type) }}
                         </td>
 

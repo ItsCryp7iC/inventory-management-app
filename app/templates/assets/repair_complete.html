@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+
+{% block title %}Complete Repair - {{ asset.asset_tag }}{% endblock %}
+
+{% block content %}
+<h1 class="h3 mb-3">Complete Repair</h1>
+
+<div class="card shadow-sm">
+    <div class="card-body">
+        <p class="mb-3">
+            <strong>Asset:</strong> {{ asset.asset_tag }} — {{ asset.name }}<br>
+            <strong>Current Status:</strong> {{ asset.status }} (Under Repair)
+        </p>
+
+        <form method="post">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+            <div class="mb-3">
+                <label class="form-label">Outcome</label>
+                <select name="outcome" class="form-select">
+                    <option value="back_to_stock">Repaired – return to stock</option>
+                    <option value="disposed">Not repairable – dispose asset</option>
+                </select>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Repair Cost</label>
+                <input type="text" name="repair_cost" class="form-control"
+                       placeholder="Amount (optional)">
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Repair Notes</label>
+                <textarea name="repair_notes" class="form-control" rows="3"
+                          placeholder="Summary of work done, parts replaced, etc."></textarea>
+            </div>
+
+            <button type="submit" class="btn btn-success">Complete Repair</button>
+            <a href="{{ url_for('assets.asset_detail', asset_id=asset.id) }}"
+               class="btn btn-secondary">
+                Cancel
+            </a>
+        </form>
+    </div>
+</div>
+{% endblock %}
