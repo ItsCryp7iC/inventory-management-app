@@ -1,34 +1,24 @@
 (function () {
-    const htmlEl = document.documentElement;
-    const toggleBtn = document.getElementById("theme-toggle-btn");
-    const themeLabel = document.getElementById("theme-label");
+    const storedTheme = localStorage.getItem("theme") || "dark";
+    document.documentElement.setAttribute("data-theme", storedTheme);
+})();
 
-    const THEME_KEY = "inventory_theme";
+document.addEventListener("DOMContentLoaded", function () {
+    const btn = document.getElementById("theme-toggle-btn");
+    const label = document.getElementById("theme-label");
 
     function applyTheme(theme) {
-        if (theme !== "light" && theme !== "dark") {
-            theme = "dark";
-        }
-        htmlEl.setAttribute("data-theme", theme);
-        if (themeLabel) {
-            themeLabel.textContent = theme === "dark" ? "Dark" : "Light";
-        }
-        localStorage.setItem(THEME_KEY, theme);
+        document.documentElement.setAttribute("data-theme", theme);
+        localStorage.setItem("theme", theme);
+        if (label) label.textContent = theme.charAt(0).toUpperCase() + theme.slice(1);
     }
 
-    function toggleTheme() {
-        const current = htmlEl.getAttribute("data-theme") || "dark";
-        const next = current === "dark" ? "light" : "dark";
-        applyTheme(next);
-    }
+    const currentTheme = document.documentElement.getAttribute("data-theme");
+    if (label) label.textContent = currentTheme.charAt(0).toUpperCase() + currentTheme.slice(1);
 
-    // Initialize
-    document.addEventListener("DOMContentLoaded", function () {
-        const stored = localStorage.getItem(THEME_KEY);
-        applyTheme(stored || "dark");
-
-        if (toggleBtn) {
-            toggleBtn.addEventListener("click", toggleTheme);
-        }
+    btn?.addEventListener("click", () => {
+        const nextTheme = currentTheme === "dark" ? "light" : "dark";
+        applyTheme(nextTheme);
+        location.reload(); // ensures Bootstrap recalculates colors cleanly
     });
-})();
+});

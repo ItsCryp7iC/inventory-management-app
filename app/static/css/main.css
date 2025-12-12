@@ -1,65 +1,184 @@
-/* CSS variables for theming */
-
 :root {
-    --color-bg: #0f172a;       /* dark slate */
-    --color-bg-soft: #111827;
-    --color-border: #1f2937;
-    --color-text: #e5e7eb;
-    --color-text-muted: #9ca3af;
-    --color-card-bg: #020617;
+  --bg: #0b0f14;
+  --surface: #111827;
+  --surface-2: #0f172a;
+  --text: #e5e7eb;
+  --muted: #9ca3af;
+  --border: rgba(255, 255, 255, 0.12);
+
+  --link: #93c5fd;
+
+  --btn-bg: transparent;
+  --btn-border: rgba(255, 255, 255, 0.22);
+
+  --shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
 }
 
-:root[data-theme="light"],
 html[data-theme="light"] {
-    --color-bg: #f8fafc;
-    --color-bg-soft: #ffffff;
-    --color-border: #e5e7eb;
-    --color-text: #111827;
-    --color-text-muted: #6b7280;
-    --color-card-bg: #ffffff;
+  --bg: #f6f7fb;
+  --surface: #ffffff;
+  --surface-2: #f3f4f6;
+  --text: #111827;
+  --muted: #6b7280;
+  --border: rgba(17, 24, 39, 0.12);
+
+  --link: #1d4ed8;
+
+  --btn-bg: transparent;
+  --btn-border: rgba(17, 24, 39, 0.22);
+
+  --shadow: 0 6px 18px rgba(0, 0, 0, 0.10);
 }
 
-/* Apply theme variables */
-
-html, body {
-    background-color: var(--color-bg);
-    color: var(--color-text);
+/* Base */
+body {
+  background: var(--bg) !important;
+  color: var(--text) !important;
 }
 
-/* Override some Bootstrap backgrounds using variables */
+/* Bootstrap components (override politely) */
+.card {
+  background: var(--surface) !important;
+  color: var(--text) !important;
+  border-color: var(--border) !important;
+  box-shadow: var(--shadow);
+}
 
-body.bg-body {
-    background-color: var(--color-bg) !important;
-    color: var(--color-text) !important;
+.border-bottom,
+.border,
+hr {
+  border-color: var(--border) !important;
 }
 
 .navbar {
-    background-color: var(--color-bg-soft) !important;
+  background: var(--surface) !important;
+  border-color: var(--border) !important;
 }
 
-.card {
-    background-color: var(--color-card-bg);
-    border-color: var(--color-border);
-    color: var(--color-text);
+/* Navbar text should always be readable */
+.navbar .navbar-brand,
+.navbar .navbar-brand:visited,
+.navbar .navbar-brand:hover,
+.navbar .navbar-brand:focus {
+    color: var(--text) !important;
+    text-decoration: none;
 }
+
+.navbar .nav-link,
+.navbar .nav-link:visited {
+    color: var(--text) !important;
+}
+
+.navbar .nav-link:hover,
+.navbar .nav-link:focus {
+    opacity: 0.9;
+}
+
 
 .list-group-item {
-    background-color: var(--color-bg-soft);
-    color: var(--color-text);
-    border-color: var(--color-border);
+  background: var(--surface) !important;
+  color: var(--text) !important;
+  border-color: var(--border) !important;
 }
 
 .list-group-item.active {
-    background-color: #2563eb;
-    border-color: #1d4ed8;
+  border-color: var(--border) !important;
+}
+
+.table {
+  color: var(--text) !important;
+}
+
+.table thead th {
+  border-color: var(--border) !important;
+}
+
+.table td,
+.table th {
+  border-color: var(--border) !important;
+}
+
+.form-control,
+.form-select {
+  background: var(--surface) !important;
+  color: var(--text) !important;
+  border-color: var(--border) !important;
+}
+
+.form-control::placeholder {
+  color: var(--muted) !important;
+}
+
+.form-control:focus,
+.form-select:focus {
+  border-color: rgba(147, 197, 253, 0.55) !important;
+  box-shadow: 0 0 0 0.2rem rgba(147, 197, 253, 0.15) !important;
+}
+
+a {
+  color: var(--link);
 }
 
 .text-muted {
-    color: var(--color-text-muted) !important;
+  color: var(--muted) !important;
 }
 
-/* General spacing tweaks */
+.btn-outline-secondary,
+.btn-outline-dark,
+.btn-outline-danger,
+.btn-outline-primary,
+.btn-outline-warning,
+.btn-outline-info {
+  border-color: var(--btn-border) !important;
+}
+
+/* Small UI polish */
+.badge {
+  border: 1px solid rgba(255,255,255,0.08);
+}
+
+html[data-theme="light"] .badge {
+  border: 1px solid rgba(17,24,39,0.08);
+}
 
 main {
-    padding-bottom: 2rem;
+    background: transparent !important;
+}
+
+.container-fluid {
+    background: transparent !important;
+}
+
+/* --- Tables: force dark/light surfaces --- */
+.table {
+    background: var(--surface) !important;
+    color: var(--text) !important;
+}
+
+.table thead th {
+    background: var(--surface-2) !important;
+    color: var(--text) !important;
+}
+
+.table tbody td,
+.table tbody th {
+    background: var(--surface) !important;
+    color: var(--text) !important;
+}
+
+/* If you use striped/hover tables anywhere */
+.table-striped > tbody > tr:nth-of-type(odd) > * {
+    background: rgba(255, 255, 255, 0.03) !important;
+}
+
+.table-hover > tbody > tr:hover > * {
+    background: rgba(255, 255, 255, 0.06) !important;
+}
+
+html[data-theme="light"] .table-striped > tbody > tr:nth-of-type(odd) > * {
+    background: rgba(17, 24, 39, 0.03) !important;
+}
+
+html[data-theme="light"] .table-hover > tbody > tr:hover > * {
+    background: rgba(17, 24, 39, 0.06) !important;
 }
