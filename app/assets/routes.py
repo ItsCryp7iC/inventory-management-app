@@ -5,6 +5,8 @@ from app.models import Asset, Location, Category, SubCategory, Vendor, AssetEven
 from .forms import AssetForm
 from datetime import date
 from flask_login import login_required
+from flask_login import current_user
+
 
 
 
@@ -49,9 +51,11 @@ def log_asset_event(
         to_status=to_status,
         from_location_id=from_location_id,
         to_location_id=to_location_id,
+        performed_by_id=current_user.id if current_user.is_authenticated else None,
     )
     db.session.add(event)
-    # Do NOT commit here – caller will commit transaction
+    # commit happens in the caller
+
 
 
 @bp.route("/")

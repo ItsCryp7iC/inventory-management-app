@@ -185,6 +185,9 @@ class AssetEvent(db.Model):
     from_location_id = db.Column(db.Integer, db.ForeignKey("locations.id"), nullable=True)
     to_location_id = db.Column(db.Integer, db.ForeignKey("locations.id"), nullable=True)
 
+    performed_by_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=True)
+    performed_by = db.relationship("User", lazy="joined")
+
     created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
 
     from_location = db.relationship(

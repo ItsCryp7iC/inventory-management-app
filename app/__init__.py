@@ -1,6 +1,5 @@
 from flask import Flask
-
-from .extensions import init_extensions   # IMPORTANT: import the initializer
+from .extensions import init_extensions
 
 
 def create_app():
@@ -9,13 +8,13 @@ def create_app():
     # Load config
     app.config.from_object("config.Config")
 
-    # Init ALL extensions (db, migrate, csrf, login_manager, context_processor)
+    # Init ALL extensions in ONE place
     init_extensions(app)
 
     # Import models so Flask-Migrate can detect them
     from . import models  # noqa
 
-    # Register blueprints (AFTER extensions are initialized)
+    # Register blueprints
     from .main import bp as main_bp
     app.register_blueprint(main_bp)
 

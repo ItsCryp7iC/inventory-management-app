@@ -2,6 +2,8 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from flask_wtf import CSRFProtect
 from flask_login import LoginManager
+from flask_wtf.csrf import generate_csrf
+
 
 db = SQLAlchemy()
 migrate = Migrate()
@@ -14,7 +16,13 @@ login_manager.login_message_category = "warning"
 
 def init_extensions(app):
     db.init_app(app)
+    migrate.init_app(app, db)
+    csrf.init_app(app)
     login_manager.init_app(app)
+
+    app.jinja_env.globals["csrf_token"] = generate_csrf
+
+
 
     @app.context_processor
     def inject_user():
@@ -22,7 +30,6 @@ def init_extensions(app):
         return dict(current_user=current_user)
 
 
-# Required by Flask-Login to load users from DB
 from app.models import User
 
 @login_manager.user_loader
