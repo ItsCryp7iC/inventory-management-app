@@ -50,31 +50,33 @@
         <!-- Sidebar -->
         <aside class="col-12 col-md-3 col-lg-2 mb-3">
             <div class="list-group small">
-                <a href="{{ url_for('main.index') }}" class="list-group-item list-group-item-action{% if request.endpoint == 'main.index' %} active{% endif %}">
-                    Dashboard
-                </a>
-                <a href="{{ url_for('assets.list_assets') }}" class="list-group-item list-group-item-action{% if request.endpoint and request.endpoint.startswith('assets.') %} active{% endif %}">
-                    Assets
-                </a>
-                
-                <a href="{{ url_for('categories.list_categories') }}"
-                class="list-group-item list-group-item-action{% if request.endpoint and request.endpoint.startswith('categories.') %} active{% endif %}">
-                    Categories
-                </a>
+                {% if current_user.is_authenticated and current_user.is_admin %}
+                    <a href="{{ url_for('main.index') }}" class="list-group-item list-group-item-action{% if request.endpoint == 'main.index' %} active{% endif %}">
+                        Dashboard
+                    </a>
+                    <a href="{{ url_for('assets.list_assets') }}" class="list-group-item list-group-item-action{% if request.endpoint and request.endpoint.startswith('assets.') %} active{% endif %}">
+                        Assets
+                    </a>
+                    
+                    <a href="{{ url_for('categories.list_categories') }}"
+                    class="list-group-item list-group-item-action{% if request.endpoint and request.endpoint.startswith('categories.') %} active{% endif %}">
+                        Categories
+                    </a>
 
-                <a href="{{ url_for('locations.list_locations') }}"
-                class="list-group-item list-group-item-action{% if request.endpoint and request.endpoint.startswith('locations.') %} active{% endif %}">
-                    Locations
-                </a>
+                    <a href="{{ url_for('locations.list_locations') }}"
+                    class="list-group-item list-group-item-action{% if request.endpoint and request.endpoint.startswith('locations.') %} active{% endif %}">
+                        Locations
+                    </a>
 
-                <a href="{{ url_for('vendors.list_vendors') }}"
-                class="list-group-item list-group-item-action{% if request.endpoint and request.endpoint.startswith('vendors.') %} active{% endif %}">
-                    Vendors
-                </a>
+                    <a href="{{ url_for('vendors.list_vendors') }}"
+                    class="list-group-item list-group-item-action{% if request.endpoint and request.endpoint.startswith('vendors.') %} active{% endif %}">
+                        Vendors
+                    </a>
 
-                <a href="#" class="list-group-item list-group-item-action">
-                    Settings
-                </a>
+                    <a href="#" class="list-group-item list-group-item-action">
+                        Settings
+                    </a>
+                {% endif %}
             </div>
         </aside>
 

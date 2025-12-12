@@ -38,4 +38,10 @@ def create_app():
     app.jinja_env.globals["date"] = date
     app.jinja_env.globals["timedelta"] = timedelta
 
+    from flask import render_template
+
+    @app.errorhandler(403)
+    def forbidden(_e):
+        return render_template("errors/403.html"), 403
+
     return app
