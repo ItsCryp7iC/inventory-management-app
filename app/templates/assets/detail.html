@@ -214,7 +214,7 @@
     <form method="post"
           action="{{ url_for('assets.retire_asset', asset_id=asset.id) }}"
           class="d-inline">
-        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
         <button type="submit"
                 class="btn btn-outline-dark btn-sm"
                 onclick="return confirm('Mark this asset as RETIRED? It will no longer be considered active, but will stay in the records.');">
@@ -225,7 +225,7 @@
     <form method="post"
           action="{{ url_for('assets.dispose_asset', asset_id=asset.id) }}"
           class="d-inline">
-        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
         <button type="submit"
                 class="btn btn-outline-danger btn-sm"
                 onclick="return confirm('Mark this asset as DISPOSED? This is usually final and should be done only after disposal is verified.');">
@@ -332,7 +332,7 @@
                 <form method="post"
                       action="{{ url_for('assets.unassign_asset', asset_id=asset.id) }}"
                       class="d-inline">
-                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
                     <button type="submit"
                             class="btn btn-outline-primary btn-sm"
                             onclick="return confirm('Unassign this asset and return to stock?');">
@@ -343,7 +343,7 @@
                 <form method="post"
                       action="{{ url_for('assets.assign_asset', asset_id=asset.id) }}"
                       class="row g-1 align-items-end">
-                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
                     <div class="col-auto">
                         <label class="form-label mb-1 small">Assign To</label>
                         <input type="text" name="assigned_to" class="form-control form-control-sm"
@@ -376,7 +376,7 @@
             <form method="post"
                   action="{{ url_for('assets.retire_asset', asset_id=asset.id) }}"
                   class="d-inline">
-                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
                 <button type="submit"
                         class="btn btn-outline-dark btn-sm"
                         onclick="return confirm('Mark this asset as RETIRED? It will no longer be considered active, but will stay in the records.');">
@@ -388,7 +388,7 @@
             <form method="post"
                   action="{{ url_for('assets.dispose_asset', asset_id=asset.id) }}"
                   class="d-inline">
-                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
                 <button type="submit"
                         class="btn btn-outline-danger btn-sm"
                         onclick="return confirm('Mark this asset as DISPOSED? This is usually final and should be done only after disposal is verified.');">
