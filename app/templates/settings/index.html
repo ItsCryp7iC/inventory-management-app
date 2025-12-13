@@ -33,6 +33,15 @@
                 {% endfor %}
             </div>
 
+            <div class="col-12 col-md-6">
+                <label class="form-label">{{ form.asset_tag_prefix.label }}</label>
+                {{ form.asset_tag_prefix(class="form-control") }}
+                <div class="form-text">Prefix for auto-generated asset tags (include a dash if you want one).</div>
+                {% for err in form.asset_tag_prefix.errors %}
+                    <div class="text-danger small">{{ err }}</div>
+                {% endfor %}
+            </div>
+
             <div class="col-12">
                 <button type="submit" class="btn btn-primary">
                     {{ form.submit.label.text }}

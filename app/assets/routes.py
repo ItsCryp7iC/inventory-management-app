@@ -13,7 +13,7 @@ from sqlalchemy import func
 from . import bp
 from .forms import AssetForm
 from app.extensions import db
-from app.models import Asset, Location, Category, SubCategory, Vendor, AssetEvent, AssetTagSequence
+from app.models import Asset, Location, Category, SubCategory, Vendor, AssetEvent, AssetTagSequence, Setting
 from app.auth.decorators import admin_required
 
 
@@ -21,13 +21,26 @@ from app.auth.decorators import admin_required
 # Helpers
 # ----------------------------
 
+def _company_prefix() -> str:
+    """
+    Retrieve the asset tag prefix from settings. Strips trailing dashes/spaces
+    and uppercases for consistency. Defaults to ESS.
+    """
+    setting = Setting.query.filter_by(key="asset_tag_prefix").first()
+    prefix = (setting.value if setting else "ESS").strip() if setting else "ESS"
+    if prefix.endswith("-"):
+        prefix = prefix[:-1]
+    if not prefix:
+        prefix = "ESS"
+    return prefix.upper()
+
 def _max_existing_seq_for_office_year(office_code: str, year: int) -> int:
     """
     Scan existing asset tags to find the max sequence for an office/year.
     This is used to initialize/repair the counter when the sequence table is
     created after assets already exist.
     """
-    company_prefix = "ESS"
+    company_prefix = _company_prefix()
     year_str = str(year)
     max_seq = 0
 
@@ -132,7 +145,7 @@ def generate_asset_tag(location: Location, category: Category, year: int) -> str
     Sequencing rule: sequence is per Office+Year (shared across all categories
     for that office/year) and never reuses numbers even if assets are deleted.
     """
-    company = "ESS"
+    company = _company_prefix()
 
     office_code = (location.code or "").strip().upper()
     cat_code = (category.code or "").strip().upper()
