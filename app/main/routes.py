@@ -2,8 +2,11 @@ from flask_login import login_required
 
 from datetime import date, timedelta
 from flask import render_template
+from sqlalchemy import func
+
 from . import bp
-from app.models import Asset
+from app.extensions import db
+from app.models import Asset, Category, Location, AssetEvent
 
 
 @bp.route("/")
@@ -40,6 +43,36 @@ def index():
         (Asset.category_id == None)  # noqa: E711
     ).order_by(Asset.warranty_expiry_date.asc().nullslast(), Asset.id.desc()).limit(10).all()
 
+    # Aggregates for charts
+    category_breakdown = [
+        {"name": name, "count": cnt}
+        for name, cnt in db.session.query(Category.name, func.count(Asset.id))
+        .join(Asset, Asset.category_id == Category.id)
+        .group_by(Category.id, Category.name)
+        .order_by(Category.name)
+        .all()
+    ]
+
+    location_breakdown = [
+        {"name": name, "count": cnt}
+        for name, cnt in db.session.query(Location.name, func.count(Asset.id))
+        .join(Asset, Asset.location_id == Location.id)
+        .group_by(Location.id, Location.name)
+        .order_by(Location.name)
+        .all()
+    ]
+
+    monthly_events = [
+        {"month": month, "count": cnt}
+        for month, cnt in db.session.query(
+            func.strftime("%Y-%m", AssetEvent.created_at).label("month"),
+            func.count(AssetEvent.id),
+        )
+        .group_by("month")
+        .order_by("month")
+        .all()
+    ]
+
     return render_template(
         "index.html",
         total_assets=total_assets,
@@ -49,4 +82,7 @@ def index():
         damaged_count=damaged_count,
         missing_count=missing_count,
         attention_assets=attention_assets,
+        category_breakdown=category_breakdown,
+        location_breakdown=location_breakdown,
+        monthly_events=monthly_events,
     )

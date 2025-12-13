@@ -393,6 +393,24 @@ html[data-theme="dark"] .btn-close {
     color: #9ca3af;
 }
 
+.chart-card canvas {
+    max-height: 260px;
+    max-width: 100%;
+}
+
+.chart-wrapper {
+    width: 100%;
+    height: 260px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.chart-wrapper canvas {
+    display: block;
+}
+
+
 .modern-dropdown-menu {
     position: absolute;
     top: 100%;
