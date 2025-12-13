@@ -33,6 +33,15 @@
                 </div>
 
                 <div class="col-md-6">
+                    <label class="form-label">{{ form.code.label }}</label>
+                    {{ form.code(class="form-control") }}
+                    <div class="form-text">{{ form.code.description }}</div>
+                    {% for err in form.code.errors %}
+                        <div class="text-danger small">{{ err }}</div>
+                    {% endfor %}
+                </div>
+
+                <div class="col-md-6">
                     <label class="form-label">{{ form.contact_email.label }}</label>
                     {{ form.contact_email(class="form-control") }}
                     {% for err in form.contact_email.errors %}

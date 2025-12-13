@@ -17,6 +17,7 @@
                 <table class="table table-sm align-middle mb-0">
                     <thead>
                         <tr>
+                            <th>Code</th>
                             <th>Name</th>
                             <th>Email</th>
                             <th>Phone</th>
@@ -27,6 +28,7 @@
                     <tbody>
                         {% for vendor in vendors %}
                         <tr>
+                            <td>{{ vendor.code or "-" }}</td>
                             <td>{{ vendor.name }}</td>
                             <td>{{ vendor.contact_email or "-" }}</td>
                             <td>{{ vendor.contact_phone or "-" }}</td>

@@ -56,7 +56,13 @@
         <div class="row mb-2">
             <div class="col-md-4"><strong>Vendor:</strong></div>
             <div class="col-md-8">
-                {{ asset.vendor.name if asset.vendor else "-" }}
+                {% if asset.vendor %}
+                    <a href="#vendorModal" data-bs-toggle="modal" data-bs-target="#vendorModal" class="text-decoration-none">
+                        {{ asset.vendor.code or asset.vendor.name }} - {{ asset.vendor.name }}
+                    </a>
+                {% else %}
+                    -
+                {% endif %}
             </div>
         </div>
 
@@ -436,6 +442,34 @@
 {% else %}
 <div class="alert alert-secondary small">
     You have read-only access. Contact an administrator to make changes.
+</div>
+{% endif %}
+
+{% if asset.vendor %}
+<!-- Vendor modal -->
+<div class="modal fade" id="vendorModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Vendor Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p class="mb-1"><strong>Code:</strong> {{ asset.vendor.code or "-" }}</p>
+                <p class="mb-1"><strong>Name:</strong> {{ asset.vendor.name }}</p>
+                <p class="mb-1"><strong>Email:</strong> {{ asset.vendor.contact_email or "-" }}</p>
+                <p class="mb-1"><strong>Phone:</strong> {{ asset.vendor.contact_phone or "-" }}</p>
+                <p class="mb-1"><strong>Website:</strong>
+                    {% if asset.vendor.website %}
+                        <a href="{{ asset.vendor.website }}" target="_blank">{{ asset.vendor.website }}</a>
+                    {% else %}
+                        -
+                    {% endif %}
+                </p>
+                <p class="mb-1"><strong>Address:</strong> {{ asset.vendor.address or "-" }}</p>
+            </div>
+        </div>
+    </div>
 </div>
 {% endif %}
 

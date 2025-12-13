@@ -149,6 +149,34 @@ def generate_asset_tag(location: Location, category: Category, year: int) -> str
     return f"{company}-{office_code}-{cat_code}-{year_str}-{next_seq:04d}"
 
 
+def ensure_vendor_code(vendor: Vendor):
+    """
+    Ensure a vendor has a code; auto-generate if missing.
+    """
+    if not vendor or vendor.code:
+        return
+
+    existing_codes = (
+        Vendor.query
+        .with_entities(Vendor.code)
+        .filter(Vendor.code.isnot(None))
+        .all()
+    )
+    max_num = 0
+    for (code,) in existing_codes:
+        if not code:
+            continue
+        digits = "".join(ch for ch in code if ch.isdigit())
+        if digits:
+            try:
+                max_num = max(max_num, int(digits))
+            except ValueError:
+                continue
+
+    vendor.code = f"V{max_num + 1:03d}"
+    db.session.commit()
+
+
 def log_asset_event(
     asset: Asset,
     event_type: str,
@@ -362,6 +390,7 @@ def edit_asset(asset_id):
 @login_required
 def asset_detail(asset_id):
     asset = Asset.query.get_or_404(asset_id)
+    ensure_vendor_code(asset.vendor)
     events = (
         AssetEvent.query
         .filter_by(asset_id=asset.id)

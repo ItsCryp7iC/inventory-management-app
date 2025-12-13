@@ -77,6 +77,7 @@ class Vendor(TimestampMixin, db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(150), nullable=False, unique=True)
+    code = db.Column(db.String(20), nullable=True, unique=True)
     contact_email = db.Column(db.String(150), nullable=True)
     contact_phone = db.Column(db.String(50), nullable=True)
     website = db.Column(db.String(200), nullable=True)
