@@ -74,4 +74,28 @@
         </div>
     </div>
 </div>
+
+<div class="card shadow-sm mt-3">
+    <div class="card-body">
+        <h2 class="h6 mb-2">Category / Sub-Category Backup</h2>
+        <p class="text-muted small mb-3">
+            Export or import categories and sub-categories for backup or bulk editing. Expected CSV headers:
+            <code>category_code, category_name, category_description, subcategory_name, subcategory_description</code>.
+        </p>
+        <div class="row g-3">
+            <div class="col-12 col-md-6">
+                <a href="{{ url_for('categories.export_categories') }}" class="btn btn-outline-secondary w-100">
+                    Download Category Backup
+                </a>
+            </div>
+            <div class="col-12 col-md-6">
+                <form method="post" action="{{ url_for('categories.import_categories') }}" enctype="multipart/form-data" class="d-flex flex-column gap-2">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <input type="file" name="file" accept=".csv" class="form-control" required>
+                    <button type="submit" class="btn btn-primary">Import Categories CSV</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
 {% endblock %}

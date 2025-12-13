@@ -1,4 +1,6 @@
-from flask import render_template, redirect, url_for, flash, request
+from flask import render_template, redirect, url_for, flash, request, make_response
+import io
+import csv
 from . import bp
 from app.extensions import db
 from app.models import Category, SubCategory
@@ -186,3 +188,112 @@ def delete_subcategory(subcat_id):
     db.session.commit()
     flash("Sub-Category deleted.", "success")
     return redirect(url_for("categories.list_subcategories"))
+
+
+# -----------------------------
+# Import / Export (Backup)
+# -----------------------------
+
+@bp.route("/export")
+@admin_required
+def export_categories():
+    """Export categories and sub-categories as CSV."""
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow([
+        "category_code",
+        "category_name",
+        "category_description",
+        "subcategory_name",
+        "subcategory_description",
+    ])
+
+    categories = Category.query.order_by(Category.code.asc()).all()
+    for cat in categories:
+        if cat.subcategories:
+            for sc in cat.subcategories:
+                writer.writerow([
+                    cat.code or "",
+                    cat.name or "",
+                    cat.description or "",
+                    sc.name or "",
+                    sc.description or "",
+                ])
+        else:
+            writer.writerow([
+                cat.code or "",
+                cat.name or "",
+                cat.description or "",
+                "",
+                "",
+            ])
+
+    resp = make_response(output.getvalue())
+    resp.headers["Content-Disposition"] = "attachment; filename=categories_backup.csv"
+    resp.headers["Content-Type"] = "text/csv"
+    return resp
+
+
+@bp.route("/import", methods=["POST"])
+@admin_required
+def import_categories():
+    """Import categories and sub-categories from CSV."""
+    file = request.files.get("file")
+    if not file or file.filename == "":
+        flash("Please select a CSV file to import.", "danger")
+        return redirect(request.referrer or url_for("settings.general_settings"))
+
+    try:
+        stream = io.StringIO(file.stream.read().decode("utf-8"))
+    except UnicodeDecodeError:
+        flash("Unable to read file. Ensure it is UTF-8 encoded CSV.", "danger")
+        return redirect(request.referrer or url_for("settings.general_settings"))
+
+    reader = csv.DictReader(stream)
+    required_cols = {"category_code", "category_name"}
+    if not required_cols.issubset(set(reader.fieldnames or [])):
+        flash(f"CSV must include headers: {', '.join(required_cols)}", "danger")
+        return redirect(request.referrer or url_for("settings.general_settings"))
+
+    created_cats = updated_cats = created_subs = updated_subs = 0
+    for row in reader:
+        cat_code = (row.get("category_code") or "").strip().upper()
+        cat_name = (row.get("category_name") or "").strip()
+        cat_desc = (row.get("category_description") or "").strip()
+        sub_name = (row.get("subcategory_name") or "").strip()
+        sub_desc = (row.get("subcategory_description") or "").strip()
+
+        if not cat_code or not cat_name:
+            continue
+
+        category = Category.query.filter_by(code=cat_code).first()
+        if not category:
+            category = Category(code=cat_code, name=cat_name, description=cat_desc or None)
+            db.session.add(category)
+            created_cats += 1
+            db.session.flush()
+        else:
+            if category.name != cat_name or category.description != (cat_desc or None):
+                category.name = cat_name
+                category.description = cat_desc or None
+                updated_cats += 1
+                db.session.flush()
+
+        if sub_name:
+            sub = SubCategory.query.filter_by(name=sub_name, category_id=category.id).first()
+            if not sub:
+                sub = SubCategory(name=sub_name, category_id=category.id, description=sub_desc or None)
+                db.session.add(sub)
+                created_subs += 1
+            else:
+                if sub.description != (sub_desc or None):
+                    sub.description = sub_desc or None
+                    updated_subs += 1
+
+    db.session.commit()
+    flash(
+        f"Import complete. Categories created/updated: {created_cats}/{updated_cats}. "
+        f"Sub-Categories created/updated: {created_subs}/{updated_subs}.",
+        "success",
+    )
+    return redirect(request.referrer or url_for("settings.general_settings"))
