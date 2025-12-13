@@ -7,7 +7,7 @@ from flask_wtf import FlaskForm
 from . import bp
 from app.auth.decorators import admin_required
 from app.extensions import db
-from app.models import Setting
+from app.models import Setting, Asset, AssetEvent, AssetTagSequence, Location, Category, SubCategory, Vendor, User
 
 
 def get_setting_value(key: str, default=None):
@@ -75,3 +75,31 @@ def general_settings():
 def import_export():
     from app.assets.routes import EXPORT_HEADERS  # reuse headers
     return render_template("settings/import_export.html", headers=EXPORT_HEADERS)
+
+
+@bp.route("/reset-app", methods=["POST"])
+@login_required
+@admin_required
+def reset_app_data():
+    """
+    Danger zone: wipe all domain data except admin users.
+    """
+    confirm = request.form.get("confirm_text", "").strip()
+    if confirm != "DELETE":
+        flash('Type "DELETE" exactly to confirm.', "danger")
+        return redirect(url_for("settings.general_settings"))
+
+    # Delete in dependency-safe order
+    db.session.query(AssetEvent).delete()
+    db.session.query(AssetTagSequence).delete()
+    db.session.query(Asset).delete()
+    db.session.query(SubCategory).delete()
+    db.session.query(Category).delete()
+    db.session.query(Location).delete()
+    db.session.query(Vendor).delete()
+    # Remove non-admin users
+    db.session.query(User).filter(User.is_admin == False).delete()  # noqa: E712
+
+    db.session.commit()
+    flash("All data wiped. Admin users remain.", "success")
+    return redirect(url_for("settings.general_settings"))

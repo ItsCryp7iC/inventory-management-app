@@ -98,4 +98,19 @@
         </div>
     </div>
 </div>
+
+<div class="card shadow-sm mt-3 border-danger">
+    <div class="card-body">
+        <h2 class="h6 mb-2 text-danger">Danger Zone: Delete Everything</h2>
+        <p class="text-muted small mb-3">
+            This will remove all assets, vendors, locations, categories, sub-categories, and all non-admin users. Admin users will remain.
+            Type <code>DELETE</code> to confirm.
+        </p>
+        <form method="post" action="{{ url_for('settings.reset_app_data') }}" class="d-flex flex-column flex-md-row gap-2 align-items-start">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="text" name="confirm_text" class="form-control" placeholder="Type DELETE to confirm" required style="max-width: 260px;">
+            <button type="submit" class="btn btn-outline-danger">Delete Everything</button>
+        </form>
+    </div>
+</div>
 {% endblock %}
