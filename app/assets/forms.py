@@ -20,10 +20,11 @@ class AssetForm(FlaskForm):
     status = SelectField(
         "Status",
         choices=[
-            ("in_use", "In Use"),
             ("in_stock", "In Stock"),
-            ("under_repair", "Under Repair"),
-            ("retired", "Retired"),
+            ("in_use", "In Use"),
+            ("repair", "Repair"),
+            ("damaged", "Damaged"),
+            ("missing", "Missing"),
             ("disposed", "Disposed"),
         ],
         validators=[DataRequired()],

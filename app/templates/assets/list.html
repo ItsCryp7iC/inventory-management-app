@@ -101,18 +101,24 @@
                             <td>{{ asset.location.name if asset.location else "-" }}</td>
                             <td>
                                 {% set label_map = {
-                                    "in_use": "In Use",
                                     "in_stock": "In Stock",
-                                    "under_repair": "Under Repair",
-                                    "retired": "Retired",
-                                    "disposed": "Disposed"
+                                    "in_use": "In Use",
+                                    "repair": "Repair",
+                                    "damaged": "Damaged",
+                                    "missing": "Missing",
+                                    "disposed": "Disposed",
+                                    "retired": "Retired (legacy)",
+                                    "under_repair": "Under Repair (legacy)"
                                 } %}
                                 {% set color_map = {
-                                    "in_use": "primary",
                                     "in_stock": "success",
-                                    "under_repair": "warning",
+                                    "in_use": "primary",
+                                    "repair": "warning",
+                                    "damaged": "danger",
+                                    "missing": "secondary",
+                                    "disposed": "dark",
                                     "retired": "secondary",
-                                    "disposed": "dark"
+                                    "under_repair": "warning"
                                 } %}
                                 {% set status_label = label_map.get(asset.status, asset.status) %}
                                 {% set status_color = color_map.get(asset.status, "secondary") %}
@@ -125,7 +131,19 @@
                             <td>{{ asset.warranty_expiry_date or "-" }}</td>
                             <td>
                                 {% if current_user.is_authenticated and current_user.is_admin %}
-                                <a href="{{ url_for('assets.edit_asset', asset_id=asset.id) }}">Edit</a>
+                                <div class="d-flex gap-2">
+                                    <a href="{{ url_for('assets.edit_asset', asset_id=asset.id) }}"
+                                       class="btn btn-sm btn-outline-primary">
+                                        Edit
+                                    </a>
+                                    <button
+                                        type="button"
+                                        class="btn btn-sm btn-outline-danger"
+                                        data-bs-toggle="modal"
+                                        data-bs-target="#deleteModal-{{ asset.id }}">
+                                        Delete
+                                    </button>
+                                </div>
                                 {% else %}
                                 <span class="text-muted">View</span>
                                 {% endif %}
@@ -134,7 +152,31 @@
                         {% endfor %}
                     </tbody>
                 </table>
-            </div>`
+            </div>
+            {% for asset in assets %}
+            <div class="modal fade" id="deleteModal-{{ asset.id }}" tabindex="-1" aria-hidden="true">
+                <div class="modal-dialog modal-dialog-centered">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title">Delete Asset</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body">
+                            <p class="mb-0">
+                                Delete asset "{{ asset.name }}" ({{ asset.asset_tag or "No Tag" }})? This action cannot be undone.
+                            </p>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                            <form method="post" action="{{ url_for('assets.delete_asset', asset_id=asset.id) }}">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                <button type="submit" class="btn btn-danger">Delete</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
         {% else %}
             <p class="text-muted mb-0">
                 No assets found. Asset creation form will be added next.

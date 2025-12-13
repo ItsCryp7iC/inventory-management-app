@@ -125,7 +125,7 @@ class Asset(TimestampMixin, db.Model):
 
     serial_number = db.Column(db.String(150), nullable=True)
     status = db.Column(db.String(50), nullable=False, default="in_use")
-    # status examples: in_use, in_stock, under_repair, retired, disposed
+    # status examples: in_stock, in_use, repair, damaged, missing, disposed
 
     purchase_date = db.Column(db.Date, nullable=True)
     warranty_expiry_date = db.Column(db.Date, nullable=True)
@@ -203,6 +203,38 @@ class AssetEvent(db.Model):
         lazy="joined"
     )
 
-
     def __repr__(self):
         return f"<AssetEvent {self.event_type} for Asset {self.asset_id} at {self.created_at}>"
+
+
+class AssetTagSequence(db.Model):
+    """
+    Tracks the last asset tag sequence per office code and year to avoid
+    reusing numbers when assets are deleted.
+    """
+    __tablename__ = "asset_tag_sequences"
+
+    id = db.Column(db.Integer, primary_key=True)
+    office_code = db.Column(db.String(50), nullable=False)
+    year = db.Column(db.Integer, nullable=False)
+    last_seq = db.Column(db.Integer, nullable=False, default=0)
+
+    __table_args__ = (
+        db.UniqueConstraint("office_code", "year", name="uq_asset_tag_seq_office_year"),
+    )
+
+    def __repr__(self):
+        return f"<AssetTagSequence {self.office_code} {self.year} last={self.last_seq}>"
+
+
+class Setting(TimestampMixin, db.Model):
+    """
+    Simple key/value settings store for app-wide preferences.
+    """
+    __tablename__ = "settings"
+
+    key = db.Column(db.String(100), primary_key=True)
+    value = db.Column(db.Text, nullable=True)
+
+    def __repr__(self):
+        return f"<Setting {self.key}>"

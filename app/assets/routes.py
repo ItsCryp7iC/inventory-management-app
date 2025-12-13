@@ -9,13 +9,47 @@ from flask_login import login_required, current_user
 from . import bp
 from .forms import AssetForm
 from app.extensions import db
-from app.models import Asset, Location, Category, SubCategory, Vendor, AssetEvent
+from app.models import Asset, Location, Category, SubCategory, Vendor, AssetEvent, AssetTagSequence
 from app.auth.decorators import admin_required
 
 
 # ----------------------------
 # Helpers
 # ----------------------------
+
+def _max_existing_seq_for_office_year(office_code: str, year: int) -> int:
+    """
+    Scan existing asset tags to find the max sequence for an office/year.
+    This is used to initialize/repair the counter when the sequence table is
+    created after assets already exist.
+    """
+    company_prefix = "ESS"
+    year_str = str(year)
+    max_seq = 0
+
+    # pattern: ESS-{office}-{category}-{year}-{seq}
+    pattern = f"{company_prefix}-{office_code}-%-{year_str}-%"
+    tags = (
+        Asset.query
+        .with_entities(Asset.asset_tag)
+        .filter(Asset.asset_tag.like(pattern))
+        .all()
+    )
+    for (tag,) in tags:
+        parts = (tag or "").split("-")
+        if len(parts) < 5:
+            continue
+        # quick sanity: ESS, office, cat, year, seq
+        if parts[0] != company_prefix or parts[1] != office_code or parts[-2] != year_str:
+            continue
+        try:
+            seq_val = int(parts[-1])
+            if seq_val > max_seq:
+                max_seq = seq_val
+        except ValueError:
+            continue
+    return max_seq
+
 
 def _normalize_id(value):
     """Convert '0' / 0 / empty to None, keep valid int values."""
@@ -37,6 +71,52 @@ def _populate_form_choices(form: AssetForm):
     form.vendor_id.choices = [(0, "--- Select ---")] + [(v.id, v.name) for v in vendors]
 
 
+def _get_or_create_sequence(office_code: str, year: int) -> AssetTagSequence:
+    """
+    Fetch or create the sequence tracker for an office/year.
+    Uses with_for_update to reduce race conditions on DBs that support it.
+    """
+    from sqlalchemy.exc import OperationalError
+
+    seq = None
+    try:
+        seq = (
+            AssetTagSequence.query
+            .filter_by(office_code=office_code, year=year)
+            .with_for_update()
+            .first()
+        )
+    except OperationalError as exc:
+        # Fallback for missing table (e.g., migration not applied yet)
+        if "no such table" in str(exc).lower() and "asset_tag_sequences" in str(exc).lower():
+            db.session.rollback()
+            db.create_all()
+            seq = (
+                AssetTagSequence.query
+                .filter_by(office_code=office_code, year=year)
+                .with_for_update()
+                .first()
+            )
+        else:
+            raise
+
+    if not seq:
+        seq = AssetTagSequence(office_code=office_code, year=year, last_seq=0)
+        db.session.add(seq)
+        # Initialize from existing tags if any were created before this table existed
+        existing_max = _max_existing_seq_for_office_year(office_code, year)
+        if existing_max > 0:
+            seq.last_seq = existing_max
+        db.session.flush()
+    else:
+        # Repair in case the stored last_seq lags behind real tags
+        existing_max = _max_existing_seq_for_office_year(office_code, year)
+        if existing_max > seq.last_seq:
+            seq.last_seq = existing_max
+            db.session.flush()
+    return seq
+
+
 def generate_asset_tag(location: Location, category: Category, year: int) -> str:
     """
     Format:
@@ -46,7 +126,7 @@ def generate_asset_tag(location: Location, category: Category, year: int) -> str
       ESS-M-COMP-2025-0001
 
     Sequencing rule: sequence is per Office+Year (shared across all categories
-    for that office/year), so tags increment regardless of category.
+    for that office/year) and never reuses numbers even if assets are deleted.
     """
     company = "ESS"
 
@@ -58,33 +138,11 @@ def generate_asset_tag(location: Location, category: Category, year: int) -> str
     if not cat_code:
         raise ValueError("Category.code missing (expected COMP/MONI etc.).")
 
-    # Determine the next sequence based on office + year only (ignore category)
-    seq_prefix = f"{company}-{office_code}-"
+    seq = _get_or_create_sequence(office_code, year)
+    next_seq = seq.last_seq + 1
+    seq.last_seq = next_seq
+
     year_str = str(year)
-
-    matching_tags = (
-        Asset.query
-        .with_entities(Asset.asset_tag)
-        .filter(Asset.asset_tag.ilike(f"{seq_prefix}%-{year_str}-%"))
-        .all()
-    )
-
-    max_seq = 0
-    for (tag,) in matching_tags:
-        parts = tag.split("-")
-        if len(parts) < 5:
-            continue
-        # parts: [company, office, category, year, seq]
-        if parts[0] != company or parts[1] != office_code or parts[-2] != year_str:
-            continue
-        try:
-            seq_val = int(parts[-1])
-            if seq_val > max_seq:
-                max_seq = seq_val
-        except ValueError:
-            continue
-
-    next_seq = max_seq + 1
     return f"{company}-{office_code}-{cat_code}-{year_str}-{next_seq:04d}"
 
 
@@ -147,10 +205,11 @@ def list_assets():
     locations = Location.query.order_by(Location.name).all()
     status_choices = [
         ("", "All statuses"),
-        ("in_use", "In Use"),
         ("in_stock", "In Stock"),
-        ("under_repair", "Under Repair"),
-        ("retired", "Retired"),
+        ("in_use", "In Use"),
+        ("repair", "Repair"),
+        ("damaged", "Damaged"),
+        ("missing", "Missing"),
         ("disposed", "Disposed"),
     ]
 
@@ -281,30 +340,8 @@ def asset_detail(asset_id):
 @bp.route("/<int:asset_id>/retire", methods=["POST"])
 @admin_required
 def retire_asset(asset_id):
-    asset = Asset.query.get_or_404(asset_id)
-
-    if asset.status in ["retired", "disposed"]:
-        flash("Asset is already retired or disposed.", "warning")
-        return redirect(url_for("assets.asset_detail", asset_id=asset.id))
-
-    old_status = asset.status
-    old_location_id = asset.location_id
-
-    asset.status = "retired"
-
-    log_asset_event(
-        asset=asset,
-        event_type="retire",
-        note="Asset marked as retired",
-        from_status=old_status,
-        to_status=asset.status,
-        from_location_id=old_location_id,
-        to_location_id=asset.location_id,
-    )
-
-    db.session.commit()
-    flash("Asset has been marked as retired.", "success")
-    return redirect(url_for("assets.asset_detail", asset_id=asset.id))
+    flash("The 'Retired' status is no longer used.", "warning")
+    return redirect(url_for("assets.asset_detail", asset_id=asset_id))
 
 
 @bp.route("/<int:asset_id>/dispose", methods=["POST"])
@@ -341,8 +378,8 @@ def dispose_asset(asset_id):
 def assign_asset(asset_id):
     asset = Asset.query.get_or_404(asset_id)
 
-    if asset.status in ["retired", "disposed"]:
-        flash("Cannot assign a retired or disposed asset.", "danger")
+    if asset.status in ["disposed", "repair", "missing", "damaged"]:
+        flash("Cannot assign an asset that is disposed, under repair, missing, or damaged.", "danger")
         return redirect(url_for("assets.asset_detail", asset_id=asset.id))
 
     assigned_to = request.form.get("assigned_to", "").strip()
@@ -361,7 +398,7 @@ def assign_asset(asset_id):
     asset.assigned_email = assigned_email or None
     asset.assigned_at = date.today()
 
-    if asset.status in ["in_stock", "under_repair"]:
+    if asset.status == "in_stock":
         asset.status = "in_use"
 
     note_parts = [f"Assigned to {assigned_to}"]
@@ -426,11 +463,11 @@ def unassign_asset(asset_id):
 def start_repair(asset_id):
     asset = Asset.query.get_or_404(asset_id)
 
-    if asset.status in ["retired", "disposed"]:
-        flash("Cannot send a retired or disposed asset to repair.", "danger")
+    if asset.status in ["disposed", "missing"]:
+        flash("Cannot send a disposed or missing asset to repair.", "danger")
         return redirect(url_for("assets.asset_detail", asset_id=asset.id))
 
-    if asset.status == "under_repair":
+    if asset.status == "repair":
         flash("Asset is already under repair.", "warning")
         return redirect(url_for("assets.asset_detail", asset_id=asset.id))
 
@@ -447,7 +484,7 @@ def start_repair(asset_id):
         asset.repair_reference = repair_reference or None
         asset.repair_notes = repair_notes or None
 
-        asset.status = "under_repair"
+        asset.status = "repair"
 
         # Clear assignment when going to repair
         if asset.assigned_to:
@@ -486,7 +523,7 @@ def start_repair(asset_id):
 def complete_repair(asset_id):
     asset = Asset.query.get_or_404(asset_id)
 
-    if asset.status != "under_repair":
+    if asset.status != "repair":
         flash("This asset is not currently under repair.", "warning")
         return redirect(url_for("assets.asset_detail", asset_id=asset.id))
 
@@ -583,3 +620,69 @@ def move_asset(asset_id):
         return redirect(url_for("assets.asset_detail", asset_id=asset.id))
 
     return render_template("assets/move.html", asset=asset, locations=locations)
+
+
+@bp.route("/<int:asset_id>/delete", methods=["POST"])
+@admin_required
+def delete_asset(asset_id):
+    asset = Asset.query.get_or_404(asset_id)
+    asset_label = asset.asset_tag or asset.name
+
+    db.session.delete(asset)
+    db.session.commit()
+    flash(f"Asset {asset_label} has been deleted.", "success")
+    return redirect(url_for("assets.list_assets"))
+
+
+@bp.route("/<int:asset_id>/mark-damaged", methods=["POST"])
+@admin_required
+def mark_damaged(asset_id):
+    asset = Asset.query.get_or_404(asset_id)
+    old_status = asset.status
+
+    if asset.status == "disposed":
+        flash("Disposed assets cannot be marked as damaged.", "danger")
+        return redirect(url_for("assets.asset_detail", asset_id=asset.id))
+
+    asset.status = "damaged"
+
+    log_asset_event(
+        asset=asset,
+        event_type="damaged",
+        note="Asset marked as damaged.",
+        from_status=old_status,
+        to_status=asset.status,
+        from_location_id=asset.location_id,
+        to_location_id=asset.location_id,
+    )
+
+    db.session.commit()
+    flash("Asset marked as damaged.", "success")
+    return redirect(url_for("assets.asset_detail", asset_id=asset.id))
+
+
+@bp.route("/<int:asset_id>/mark-missing", methods=["POST"])
+@admin_required
+def mark_missing(asset_id):
+    asset = Asset.query.get_or_404(asset_id)
+    old_status = asset.status
+
+    if asset.status == "disposed":
+        flash("Disposed assets cannot be marked as missing.", "danger")
+        return redirect(url_for("assets.asset_detail", asset_id=asset.id))
+
+    asset.status = "missing"
+
+    log_asset_event(
+        asset=asset,
+        event_type="missing",
+        note="Asset marked as missing.",
+        from_status=old_status,
+        to_status=asset.status,
+        from_location_id=asset.location_id,
+        to_location_id=asset.location_id,
+    )
+
+    db.session.commit()
+    flash("Asset marked as missing.", "success")
+    return redirect(url_for("assets.asset_detail", asset_id=asset.id))

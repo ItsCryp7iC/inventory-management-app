@@ -22,7 +22,7 @@
 <nav class="navbar navbar-expand-lg border-bottom mb-3">
     <div class="container-fluid">
         <a class="navbar-brand fw-bold" href="{{ url_for('main.index') }}">
-            IT Inventory
+            {{ get_setting("app_name", "IT Inventory") }}
         </a>
 
         <div class="d-flex align-items-center gap-2">
@@ -73,7 +73,8 @@
                         Vendors
                     </a>
 
-                    <a href="#" class="list-group-item list-group-item-action">
+                    <a href="{{ url_for('settings.general_settings') }}"
+                    class="list-group-item list-group-item-action{% if request.endpoint and request.endpoint.startswith('settings.') %} active{% endif %}">
                         Settings
                     </a>
 

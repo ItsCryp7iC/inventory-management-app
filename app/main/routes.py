@@ -13,7 +13,9 @@ def index():
     total_assets = Asset.query.count()
     in_use_count = Asset.query.filter_by(status="in_use").count()
     in_stock_count = Asset.query.filter_by(status="in_stock").count()
-    retired_count = Asset.query.filter_by(status="retired").count()
+    repair_count = Asset.query.filter_by(status="repair").count()
+    damaged_count = Asset.query.filter_by(status="damaged").count()
+    missing_count = Asset.query.filter_by(status="missing").count()
 
     # Assets needing attention
     today = date.today()
@@ -26,11 +28,11 @@ def index():
             # Warranty expired or expiring soon
             (Asset.warranty_expiry_date != None)  # noqa: E711
             & (Asset.warranty_expiry_date <= warning_threshold)
-            & (Asset.status.notin_(["retired", "disposed"]))
+            & (Asset.status.notin_(["disposed"]))
         )
         |
-        # OR status under_repair
-        (Asset.status == "under_repair")
+        # OR status repair/damaged/missing
+        (Asset.status.in_(["repair", "damaged", "missing"]))
         |
         # OR missing key metadata
         (Asset.location_id == None)  # noqa: E711
@@ -43,6 +45,8 @@ def index():
         total_assets=total_assets,
         in_use_count=in_use_count,
         in_stock_count=in_stock_count,
-        retired_count=retired_count,
+        repair_count=repair_count,
+        damaged_count=damaged_count,
+        missing_count=missing_count,
         attention_assets=attention_assets,
     )

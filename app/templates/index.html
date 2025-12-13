@@ -39,8 +39,26 @@
     <div class="col-12 col-md-3">
         <div class="card shadow-sm">
             <div class="card-body">
-                <h2 class="h6 mb-1">Retired</h2>
-                <p class="display-6 mb-0">{{ retired_count }}</p>
+                <h2 class="h6 mb-1">Repair</h2>
+                <p class="display-6 mb-0">{{ repair_count }}</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-12 col-md-3">
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <h2 class="h6 mb-1">Damaged</h2>
+                <p class="display-6 mb-0">{{ damaged_count }}</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-12 col-md-3">
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <h2 class="h6 mb-1">Missing</h2>
+                <p class="display-6 mb-0">{{ missing_count }}</p>
             </div>
         </div>
     </div>
@@ -89,7 +107,7 @@
                                     </td>
                                     <td>
                                         {% set issues = [] %}
-                                        {% if asset.status == "under_repair" %}
+                                        {% if asset.status == "repair" %}
                                             {% set _ = issues.append("Under repair") %}
                                         {% endif %}
                                         {% if asset.warranty_expiry_date and asset.warranty_expiry_date < date.today() %}

@@ -59,18 +59,24 @@
             <div class="col-md-4"><strong>Status:</strong></div>
             <div class="col-md-8">
                 {% set label_map = {
-                    "in_use": "In Use",
                     "in_stock": "In Stock",
-                    "under_repair": "Under Repair",
-                    "retired": "Retired",
-                    "disposed": "Disposed"
+                    "in_use": "In Use",
+                    "repair": "Repair",
+                    "damaged": "Damaged",
+                    "missing": "Missing",
+                    "disposed": "Disposed",
+                    "retired": "Retired (legacy)",
+                    "under_repair": "Under Repair (legacy)"
                 } %}
                 {% set color_map = {
-                    "in_use": "primary",
                     "in_stock": "success",
-                    "under_repair": "warning",
+                    "in_use": "primary",
+                    "repair": "warning",
+                    "damaged": "danger",
+                    "missing": "secondary",
+                    "disposed": "dark",
                     "retired": "secondary",
-                    "disposed": "dark"
+                    "under_repair": "warning"
                 } %}
                 {% set status_label = label_map.get(asset.status, asset.status) %}
                 {% set status_color = color_map.get(asset.status, "secondary") %}
@@ -106,7 +112,7 @@
 </div>
 
 
-{% if asset.repair_opened_at or asset.status == "under_repair" %}
+{% if asset.repair_opened_at or asset.status == "repair" %}
 <div class="card shadow-sm mb-4">
     <div class="card-body">
         <h5 class="border-bottom pb-2 mb-3">Repair Information</h5>
@@ -114,8 +120,8 @@
         <div class="row mb-2">
             <div class="col-md-4"><strong>Status:</strong></div>
             <div class="col-md-8">
-                {% if asset.status == "under_repair" %}
-                    <span class="badge bg-warning text-dark">Under Repair</span>
+                {% if asset.status == "repair" %}
+                    <span class="badge bg-warning text-dark">Repair</span>
                 {% else %}
                     <span class="badge bg-secondary">Not under repair</span>
                 {% endif %}
@@ -190,12 +196,12 @@
     <!-- Future features, still disabled -->
     <button class="btn btn-outline-primary btn-sm" disabled>Assign (Coming Soon)</button>
         
-    {% if asset.status == "under_repair" %}
+    {% if asset.status == "repair" %}
         <a href="{{ url_for('assets.complete_repair', asset_id=asset.id) }}"
         class="btn btn-outline-success btn-sm">
             Complete Repairsd
         </a>
-    {% elif asset.status not in ["retired", "disposed"] %}
+    {% elif asset.status not in ["disposed", "missing"] %}
         <a href="{{ url_for('assets.start_repair', asset_id=asset.id) }}"
         class="btn btn-outline-warning btn-sm">
             Mark as Faulty / Send to Repair
@@ -210,15 +216,26 @@
 
     <button class="btn btn-outline-info btn-sm" disabled>Movement Log (Coming Soon)</button>
 
-    <!-- Retire / Dispose are active actions -->
+    <!-- Status updates -->
     <form method="post"
-          action="{{ url_for('assets.retire_asset', asset_id=asset.id) }}"
+          action="{{ url_for('assets.mark_damaged', asset_id=asset.id) }}"
           class="d-inline">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <button type="submit"
-                class="btn btn-outline-dark btn-sm"
-                onclick="return confirm('Mark this asset as RETIRED? It will no longer be considered active, but will stay in the records.');">
-            Mark as Retired
+                class="btn btn-outline-danger btn-sm"
+                onclick="return confirm('Mark this asset as DAMAGED?');">
+            Mark as Damaged
+        </button>
+    </form>
+
+    <form method="post"
+          action="{{ url_for('assets.mark_missing', asset_id=asset.id) }}"
+          class="d-inline">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button type="submit"
+                class="btn btn-outline-secondary btn-sm"
+                onclick="return confirm('Mark this asset as MISSING?');">
+            Mark as Missing
         </button>
     </form>
 
@@ -261,10 +278,12 @@
                                 "assign": "Assigned",
                                 "unassign": "Unassigned",
                                 "move": "Moved",
-                                "retire": "Retired",
                                 "dispose": "Disposed",
                                 "repair_start": "Repair Started",
-                                "repair_end": "Repair Completed"
+                                "repair_end": "Repair Completed",
+                                "damaged": "Damaged",
+                                "missing": "Missing",
+                                "retire": "Retired (legacy)"
                             } %}
 
                             {{ type_map.get(ev.event_type, ev.event_type) }}
@@ -272,19 +291,25 @@
 
                         <td>
                             {% set status_labels = {
-                                "in_use": "In Use",
                                 "in_stock": "In Stock",
-                                "under_repair": "Under Repair",
-                                "retired": "Retired",
-                                "disposed": "Disposed"
+                                "in_use": "In Use",
+                                "repair": "Repair",
+                                "damaged": "Damaged",
+                                "missing": "Missing",
+                                "disposed": "Disposed",
+                                "retired": "Retired (legacy)",
+                                "under_repair": "Under Repair (legacy)"
                             } %}
 
                             {% set status_colors = {
-                                "in_use": "primary",
                                 "in_stock": "success",
-                                "under_repair": "warning",
+                                "in_use": "primary",
+                                "repair": "warning",
+                                "damaged": "danger",
+                                "missing": "secondary",
+                                "disposed": "dark",
                                 "retired": "secondary",
-                                "disposed": "dark"
+                                "under_repair": "warning"
                             } %}
 
                             {% if ev.from_status or ev.to_status %}
@@ -343,56 +368,50 @@
         <div class="d-flex flex-wrap gap-2">
 
             <!-- Assign / Unassign -->
-            {% if asset.assigned_to %}
-                <form method="post"
-                      action="{{ url_for('assets.unassign_asset', asset_id=asset.id) }}"
-                      class="d-inline">
-                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                    <button type="submit"
-                            class="btn btn-outline-primary btn-sm"
-                            onclick="return confirm('Unassign this asset and return to stock?');">
-                        Unassign Asset
-                    </button>
-                </form>
+            {% if asset.status in ["disposed", "missing", "repair", "damaged"] %}
+                <div class="text-muted small">
+                    Assignment is disabled while asset status is {{ label_map.get(asset.status, asset.status) }}.
+                </div>
             {% else %}
-                <form method="post"
-                      action="{{ url_for('assets.assign_asset', asset_id=asset.id) }}"
-                      class="row g-1 align-items-end">
-                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                    <div class="col-auto">
-                        <label class="form-label mb-1 small">Assign To</label>
-                        <input type="text" name="assigned_to" class="form-control form-control-sm"
-                               placeholder="Person name" required>
-                    </div>
-                    <div class="col-auto">
-                        <label class="form-label mb-1 small">Department</label>
-                        <input type="text" name="assigned_department" class="form-control form-control-sm"
-                               placeholder="Department">
-                    </div>
-                    <div class="col-auto">
-                        <label class="form-label mb-1 small">Email</label>
-                        <input type="email" name="assigned_email" class="form-control form-control-sm"
-                               placeholder="email@company.com">
-                    </div>
-                    <div class="col-auto">
-                        <button type="submit" class="btn btn-outline-primary btn-sm mt-3">
-                            Assign Asset
+                {% if asset.assigned_to %}
+                    <form method="post"
+                          action="{{ url_for('assets.unassign_asset', asset_id=asset.id) }}"
+                          class="d-inline">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button type="submit"
+                                class="btn btn-outline-primary btn-sm"
+                                onclick="return confirm('Unassign this asset and return to stock?');">
+                            Unassign Asset
                         </button>
-                    </div>
-                </form>
+                    </form>
+                {% else %}
+                    <form method="post"
+                          action="{{ url_for('assets.assign_asset', asset_id=asset.id) }}"
+                          class="row g-1 align-items-end">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <div class="col-auto">
+                            <label class="form-label mb-1 small">Assign To</label>
+                            <input type="text" name="assigned_to" class="form-control form-control-sm"
+                                   placeholder="Person name" required>
+                        </div>
+                        <div class="col-auto">
+                            <label class="form-label mb-1 small">Department</label>
+                            <input type="text" name="assigned_department" class="form-control form-control-sm"
+                                   placeholder="Department">
+                        </div>
+                        <div class="col-auto">
+                            <label class="form-label mb-1 small">Email</label>
+                            <input type="email" name="assigned_email" class="form-control form-control-sm"
+                                   placeholder="email@company.com">
+                        </div>
+                        <div class="col-auto">
+                            <button type="submit" class="btn btn-outline-primary btn-sm mt-3">
+                                Assign Asset
+                            </button>
+                        </div>
+                    </form>
+                {% endif %}
             {% endif %}
-
-            <!-- Retire -->
-            <form method="post"
-                  action="{{ url_for('assets.retire_asset', asset_id=asset.id) }}"
-                  class="d-inline">
-                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                <button type="submit"
-                        class="btn btn-outline-dark btn-sm"
-                        onclick="return confirm('Mark this asset as RETIRED? It will stay in records.');">
-                    Mark as Retired
-                </button>
-            </form>
 
             <!-- Dispose -->
             <form method="post"

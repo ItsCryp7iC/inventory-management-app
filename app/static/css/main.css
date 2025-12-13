@@ -182,3 +182,19 @@ html[data-theme="light"] .table-striped > tbody > tr:nth-of-type(odd) > * {
 html[data-theme="light"] .table-hover > tbody > tr:hover > * {
     background: rgba(17, 24, 39, 0.06) !important;
 }
+
+/* Modals - respect theme */
+.modal-content {
+    background: var(--surface) !important;
+    color: var(--text) !important;
+    border-color: var(--border) !important;
+}
+
+.modal-header,
+.modal-footer {
+    border-color: var(--border) !important;
+}
+
+html[data-theme="dark"] .btn-close {
+    filter: invert(1) grayscale(100%);
+}

@@ -36,10 +36,17 @@ def create_app():
     from .admin import bp as admin_bp
     app.register_blueprint(admin_bp)
 
+    from .settings import bp as settings_bp
+    app.register_blueprint(settings_bp)
+
     # Global Jinja helpers
     from datetime import date, timedelta
     app.jinja_env.globals["date"] = date
     app.jinja_env.globals["timedelta"] = timedelta
+
+    # Settings helper for templates
+    from app.settings.routes import get_setting_value  # lightweight helper
+    app.jinja_env.globals["get_setting"] = get_setting_value
 
     from flask import render_template
 
