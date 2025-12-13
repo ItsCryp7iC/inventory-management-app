@@ -12,13 +12,50 @@
             <strong>Current Status:</strong> {{ asset.status }}
         </p>
 
-        <form method="post">
+        <form method="post" autocomplete="off">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
             <div class="mb-3">
+                <label class="form-label d-block">Repair Routing</label>
+                {% set has_asset_vendor = asset.vendor is not none %}
+                <div class="form-check form-check-inline">
+                    <input class="form-check-input" type="radio" name="vendor_option" id="vendorOptionAsset" value="asset_vendor"
+                        {% if has_asset_vendor %}checked{% else %}disabled{% endif %}>
+                    <label class="form-check-label" for="vendorOptionAsset">
+                        Use asset vendor
+                        {% if asset.vendor %}
+                            ({{ asset.vendor.code or "" }} {{ asset.vendor.name }})
+                        {% else %}
+                            (not set; enter vendor below)
+                        {% endif %}
+                    </label>
+                </div>
+                <div class="form-check form-check-inline">
+                    <input class="form-check-input" type="radio" name="vendor_option" id="vendorOptionOther" value="other_vendor"
+                        {% if not has_asset_vendor %}checked{% endif %}>
+                    <label class="form-check-label" for="vendorOptionOther">Send to a different vendor / shop</label>
+                </div>
+            </div>
+
+            <div class="mb-3 modern-dropdown">
                 <label class="form-label">Repair Vendor / Service Center</label>
-                <input type="text" name="repair_vendor" class="form-control"
-                       placeholder="Vendor name or service center">
+                <input type="text" name="repair_vendor" id="repairVendor"
+                       class="form-control modern-dropdown-input"
+                       placeholder="Start typing to search vendors or enter a new one" autocomplete="off">
+                <div id="vendorDropdown" class="modern-dropdown-menu d-none"></div>
+                <div class="form-text">If you pick an existing vendor, phone and address will auto-fill.</div>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Vendor Number</label>
+                <input type="text" name="repair_vendor_phone" id="repairVendorPhone" class="form-control"
+                       placeholder="Phone / mobile of vendor or service center">
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Vendor Address</label>
+                <textarea name="repair_vendor_address" id="repairVendorAddress" class="form-control" rows="2"
+                          placeholder="Address of vendor or service center"></textarea>
             </div>
 
             <div class="mb-3">
@@ -41,4 +78,115 @@
         </form>
     </div>
 </div>
+
+{% block scripts %}
+{{ super() }}
+<script>
+    (function () {
+        const vendorInput = document.getElementById("repairVendor");
+        const phoneInput = document.getElementById("repairVendorPhone");
+        const addressInput = document.getElementById("repairVendorAddress");
+        const optionRadios = document.querySelectorAll("input[name='vendor_option']");
+        const dropdown = document.getElementById("vendorDropdown");
+
+        const vendorData = [
+            {% for v in vendors %}
+            {
+                name: {{ v.name|tojson }},
+                code: {{ (v.code or "")|tojson }},
+                contact_phone: {{ (v.contact_phone or "")|tojson }},
+                address: {{ (v.address or "")|tojson }}
+            }{% if not loop.last %},{% endif %}
+            {% endfor %}
+        ];
+        const assetVendor = {{ {
+            "name": asset.vendor.name if asset.vendor else "",
+            "phone": asset.vendor.contact_phone if asset.vendor else "",
+            "address": asset.vendor.address if asset.vendor else "",
+        }|tojson|safe }};
+
+        function renderDropdown(filterValue) {
+            const term = (filterValue || "").toLowerCase();
+            const matches = vendorData
+                .filter(v => {
+                    if (!v.name) return false;
+                    if (!term) return true;
+                    return v.name.toLowerCase().includes(term);
+                })
+                .slice(0, 12);
+
+            if (!matches.length) {
+                dropdown.classList.add("d-none");
+                dropdown.innerHTML = "";
+                return;
+            }
+
+            dropdown.innerHTML = matches.map(v => `
+                <button type="button" class="modern-dropdown-item" data-name="${v.name}"
+                        data-phone="${v.contact_phone || ''}" data-address="${v.address || ''}">
+                    <span class="item-name">${v.name}</span>
+                    ${v.code ? `<span class="item-code">${v.code}</span>` : ""}
+                </button>
+            `).join("");
+            dropdown.classList.remove("d-none");
+
+            dropdown.querySelectorAll(".modern-dropdown-item").forEach(btn => {
+                btn.addEventListener("click", () => {
+                    vendorInput.value = btn.dataset.name;
+                    phoneInput.value = btn.dataset.phone || "";
+                    addressInput.value = btn.dataset.address || "";
+                    dropdown.classList.add("d-none");
+                });
+            });
+        }
+
+        function fillFromAssetVendor() {
+            if (!assetVendor.name) return;
+            vendorInput.value = assetVendor.name;
+            phoneInput.value = assetVendor.phone || "";
+            addressInput.value = assetVendor.address || "";
+        }
+
+        function setFieldEnabled(isEnabled) {
+            vendorInput.disabled = !isEnabled;
+            phoneInput.disabled = !isEnabled;
+            addressInput.disabled = !isEnabled;
+        }
+
+        function syncFromRadio() {
+            const useAssetVendor = document.getElementById("vendorOptionAsset").checked && assetVendor.name;
+            if (useAssetVendor) {
+                fillFromAssetVendor();
+                setFieldEnabled(false);
+                dropdown.classList.add("d-none");
+            } else {
+                setFieldEnabled(true);
+            }
+        }
+
+        vendorInput.addEventListener("input", (e) => {
+            renderDropdown(e.target.value);
+        });
+
+        vendorInput.addEventListener("focus", (e) => {
+            renderDropdown(e.target.value);
+        });
+
+        document.addEventListener("click", (e) => {
+            if (!dropdown.contains(e.target) && e.target !== vendorInput) {
+                dropdown.classList.add("d-none");
+            }
+        });
+
+        optionRadios.forEach(r => {
+            r.addEventListener("change", () => {
+                syncFromRadio();
+            });
+        });
+
+        // Prefill on load if asset vendor exists
+        syncFromRadio();
+    })();
+</script>
+{% endblock %}
 {% endblock %}

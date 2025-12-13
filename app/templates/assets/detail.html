@@ -144,6 +144,16 @@
         </div>
 
         <div class="row mb-2">
+            <div class="col-md-4"><strong>Vendor Number:</strong></div>
+            <div class="col-md-8">{{ asset.repair_vendor_phone or "-" }}</div>
+        </div>
+
+        <div class="row mb-2">
+            <div class="col-md-4"><strong>Vendor Address:</strong></div>
+            <div class="col-md-8">{{ asset.repair_vendor_address or "-" }}</div>
+        </div>
+
+        <div class="row mb-2">
             <div class="col-md-4"><strong>Reference:</strong></div>
             <div class="col-md-8">{{ asset.repair_reference or "-" }}</div>
         </div>

@@ -154,6 +154,8 @@ class Asset(TimestampMixin, db.Model):
     repair_opened_at = db.Column(db.Date, nullable=True)
     repair_closed_at = db.Column(db.Date, nullable=True)
     repair_vendor = db.Column(db.String(150), nullable=True)
+    repair_vendor_phone = db.Column(db.String(100), nullable=True)
+    repair_vendor_address = db.Column(db.Text, nullable=True)
     repair_reference = db.Column(db.String(150), nullable=True)
     repair_cost = db.Column(db.Numeric(12, 2), nullable=True)
     repair_notes = db.Column(db.Text, nullable=True)

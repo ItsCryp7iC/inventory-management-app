@@ -313,6 +313,87 @@ html[data-theme="dark"] .btn-close {
     transform: translateY(-1px);
 }
 
+.btn-outline-danger {
+    border-color: #f87171 !important;
+    color: #fca5a5 !important;
+}
+
+.btn-outline-danger:hover {
+    color: #fecdd3 !important;
+    border-color: #fb7185 !important;
+    background: rgba(251, 113, 133, 0.12) !important;
+}
+
+/* Modern dropdown look for searchable inputs */
+.modern-dropdown {
+    position: relative;
+}
+
+.modern-dropdown-input {
+    border-radius: 12px;
+    border: 1px solid rgba(45, 212, 191, 0.35);
+    background: linear-gradient(120deg, rgba(41, 47, 76, 0.9), rgba(17, 24, 39, 0.9));
+    color: #e5e7eb;
+    padding: 10px 12px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.04);
+    transition: all 0.2s ease;
+}
+
+.modern-dropdown-input:focus {
+    outline: none;
+    border-color: #2dd4bf;
+    box-shadow: 0 12px 28px rgba(45, 212, 191, 0.18), 0 0 0 3px rgba(45, 212, 191, 0.15);
+}
+
+.modern-dropdown .form-text {
+    color: #9ca3af;
+}
+
+.modern-dropdown-menu {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    z-index: 20;
+    margin-top: 6px;
+    background: linear-gradient(180deg, rgba(21, 24, 40, 0.98), rgba(18, 24, 38, 0.96));
+    border: 1px solid rgba(45, 212, 191, 0.3);
+    border-radius: 12px;
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(255, 255, 255, 0.02);
+    max-height: 300px;
+    overflow-y: auto;
+    padding: 6px;
+}
+
+.modern-dropdown-item {
+    width: 100%;
+    border: none;
+    background: transparent;
+    color: #e5e7eb;
+    text-align: left;
+    padding: 10px 12px;
+    border-radius: 10px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    transition: background 0.15s ease, transform 0.12s ease;
+    font-weight: 500;
+}
+
+.modern-dropdown-item:hover,
+.modern-dropdown-item:focus {
+    background: rgba(45, 212, 191, 0.08);
+    outline: none;
+    transform: translateY(-1px);
+}
+
+.modern-dropdown-item .item-code {
+    color: #67e8f9;
+    font-size: 12px;
+    font-weight: 600;
+}
+
 /* Sidebar nav spacing */
 .sidebar-nav .list-group-item {
     padding: 10px 12px;

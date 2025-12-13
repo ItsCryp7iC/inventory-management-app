@@ -8,6 +8,7 @@ from typing import Optional
 
 from flask import render_template, redirect, url_for, flash, request, abort
 from flask_login import login_required, current_user
+from sqlalchemy import func
 
 from . import bp
 from .forms import AssetForm
@@ -167,6 +168,23 @@ def ensure_vendor_code(vendor: Vendor):
 
     vendor.code = f"V{max_num + 1:03d}"
     db.session.commit()
+
+def _next_vendor_code_value():
+    """
+    Compute the next vendor code (V###) without committing or mutating records.
+    """
+    existing_codes = Vendor.query.with_entities(Vendor.code).filter(Vendor.code.isnot(None)).all()
+    max_num = 0
+    for (code,) in existing_codes:
+        if not code:
+            continue
+        code_upper = code.upper().strip()
+        if code_upper.startswith("V") and code_upper[1:].isdigit():
+            try:
+                max_num = max(max_num, int(code_upper[1:]))
+            except ValueError:
+                continue
+    return f"V{max_num + 1:03d}"
 
 
 def log_asset_event(
@@ -520,6 +538,7 @@ def unassign_asset(asset_id):
 @admin_required
 def start_repair(asset_id):
     asset = Asset.query.get_or_404(asset_id)
+    vendors = Vendor.query.order_by(Vendor.name.asc()).all()
 
     if asset.status in ["disposed", "missing"]:
         flash("Cannot send a disposed or missing asset to repair.", "danger")
@@ -530,15 +549,64 @@ def start_repair(asset_id):
         return redirect(url_for("assets.asset_detail", asset_id=asset.id))
 
     if request.method == "POST":
+        vendor_option = request.form.get("vendor_option", "asset_vendor")
         repair_vendor = request.form.get("repair_vendor", "").strip()
+        repair_vendor_phone = request.form.get("repair_vendor_phone", "").strip()
+        repair_vendor_address = request.form.get("repair_vendor_address", "").strip()
         repair_reference = request.form.get("repair_reference", "").strip()
         repair_notes = request.form.get("repair_notes", "").strip()
+
+        # Resolve vendor choice (existing vs new)
+        resolved_vendor_name = None
+        resolved_vendor_phone = None
+        resolved_vendor_address = None
+        chosen_vendor = None
+
+        # If using asset vendor and it exists, prefer that record
+        if vendor_option == "asset_vendor" and asset.vendor:
+            chosen_vendor = asset.vendor
+        elif repair_vendor:
+            # Look up by name (case-insensitive) when user typed/selected a vendor
+            chosen_vendor = (
+                Vendor.query
+                .filter(func.lower(Vendor.name) == repair_vendor.lower())
+                .first()
+            )
+
+        if chosen_vendor:
+            resolved_vendor_name = chosen_vendor.name
+            resolved_vendor_phone = chosen_vendor.contact_phone or repair_vendor_phone or None
+            resolved_vendor_address = chosen_vendor.address or repair_vendor_address or None
+        else:
+            # New vendor path — require a name
+            if not repair_vendor:
+                flash("Please provide a repair vendor or service center.", "danger")
+                return redirect(url_for("assets.start_repair", asset_id=asset.id))
+
+            # Require contact details for new vendors so they are useful later
+            if not repair_vendor_phone or not repair_vendor_address:
+                flash("Please add vendor number and address for a new repair vendor.", "danger")
+                return redirect(url_for("assets.start_repair", asset_id=asset.id))
+
+            new_vendor = Vendor(
+                name=repair_vendor,
+                contact_phone=repair_vendor_phone,
+                address=repair_vendor_address,
+            )
+            new_vendor.code = _next_vendor_code_value()
+            db.session.add(new_vendor)
+
+            resolved_vendor_name = new_vendor.name
+            resolved_vendor_phone = new_vendor.contact_phone
+            resolved_vendor_address = new_vendor.address
 
         old_status = asset.status
         old_location_id = asset.location_id
 
         asset.repair_opened_at = date.today()
-        asset.repair_vendor = repair_vendor or None
+        asset.repair_vendor = resolved_vendor_name or None
+        asset.repair_vendor_phone = resolved_vendor_phone or None
+        asset.repair_vendor_address = resolved_vendor_address or None
         asset.repair_reference = repair_reference or None
         asset.repair_notes = repair_notes or None
 
@@ -552,8 +620,12 @@ def start_repair(asset_id):
             asset.assigned_at = None
 
         note_parts = ["Sent to repair"]
-        if repair_vendor:
-            note_parts.append(f"Vendor: {repair_vendor}")
+        if resolved_vendor_name:
+            note_parts.append(f"Vendor: {resolved_vendor_name}")
+        if resolved_vendor_phone:
+            note_parts.append(f"Phone: {resolved_vendor_phone}")
+        if resolved_vendor_address:
+            note_parts.append(f"Address: {resolved_vendor_address}")
         if repair_reference:
             note_parts.append(f"Ref: {repair_reference}")
         if repair_notes:
@@ -573,7 +645,7 @@ def start_repair(asset_id):
         flash("Asset marked as under repair.", "success")
         return redirect(url_for("assets.asset_detail", asset_id=asset.id))
 
-    return render_template("assets/repair_start.html", asset=asset)
+    return render_template("assets/repair_start.html", asset=asset, vendors=vendors)
 
 
 @bp.route("/<int:asset_id>/repair/complete", methods=["GET", "POST"])
