@@ -111,7 +111,7 @@
                         — <a href="mailto:{{ asset.assigned_email }}">{{ asset.assigned_email }}</a>
                     {% endif %}
                     {% if asset.assigned_at %}
-                        <div class="small text-muted">Since {{ asset.assigned_at }}</div>
+                        <div class="small text-muted">Since {{ asset.assigned_at|fmt_date }}</div>
                     {% endif %}
                 {% else %}
                     <span class="text-muted">Not assigned</span>
@@ -160,12 +160,12 @@
 
         <div class="row mb-2">
             <div class="col-md-4"><strong>Opened At:</strong></div>
-            <div class="col-md-8">{{ asset.repair_opened_at or "-" }}</div>
+            <div class="col-md-8">{{ asset.repair_opened_at|fmt_date }}</div>
         </div>
 
         <div class="row mb-2">
             <div class="col-md-4"><strong>Closed At:</strong></div>
-            <div class="col-md-8">{{ asset.repair_closed_at or "-" }}</div>
+            <div class="col-md-8">{{ asset.repair_closed_at|fmt_date }}</div>
         </div>
 
         <div class="row mb-2">
@@ -189,7 +189,7 @@
         <div class="row mb-2">
             <div class="col-md-4"><strong>Purchase Date:</strong></div>
             <div class="col-md-8">
-                {{ asset.purchase_date or "-" }}
+                {{ asset.purchase_date|fmt_date }}
             </div>
         </div>
 
@@ -220,7 +220,7 @@
             <table class="table table-sm align-middle mb-0">
                 <thead>
                     <tr>
-                        <th>Date</th>
+                        <th>Timestamp</th>
                         <th>Event</th>
                         <th>Status Change</th>
                         <th>Location Change</th>
@@ -231,7 +231,7 @@
                 <tbody>
                     {% for ev in events %}
                     <tr>
-                        <td>{{ ev.created_at }}</td>
+                        <td>{{ ev.created_at|fmt_datetime }}</td>
                         <td>
                             {% set type_map = {
                                 "created": "Created",

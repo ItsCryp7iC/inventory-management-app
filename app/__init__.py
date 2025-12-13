@@ -1,5 +1,6 @@
 from flask import Flask
 from .extensions import init_extensions
+from datetime import date, timedelta, datetime
 
 
 def create_app():
@@ -40,9 +41,33 @@ def create_app():
     app.register_blueprint(settings_bp)
 
     # Global Jinja helpers
-    from datetime import date, timedelta
     app.jinja_env.globals["date"] = date
     app.jinja_env.globals["timedelta"] = timedelta
+
+    # Date/time formatting filters
+    def fmt_date(value):
+        if not value:
+            return "-"
+        if isinstance(value, datetime):
+            value = value.date()
+        try:
+            return value.strftime("%d-%m-%Y")
+        except Exception:
+            return str(value)
+
+    def fmt_datetime(value):
+        if not value:
+            return "-"
+        if isinstance(value, datetime):
+            return value.strftime("%d-%m-%Y - %H:%M:%S")
+        try:
+            # Try to coerce date objects
+            return fmt_date(value)
+        except Exception:
+            return str(value)
+
+    app.jinja_env.filters["fmt_date"] = fmt_date
+    app.jinja_env.filters["fmt_datetime"] = fmt_datetime
 
     # Settings helper for templates
     from app.settings.routes import get_setting_value  # lightweight helper

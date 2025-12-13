@@ -170,8 +170,8 @@
                                 </span>
                             </td>
 
-                            <td>{{ asset.purchase_date or "-" }}</td>
-                            <td>{{ asset.warranty_expiry_date or "-" }}</td>
+                            <td>{{ asset.purchase_date|fmt_date }}</td>
+                            <td>{{ asset.warranty_expiry_date|fmt_date }}</td>
                             <td>
                                 {% if current_user.is_authenticated and current_user.is_admin %}
                                 <div class="d-flex gap-2">

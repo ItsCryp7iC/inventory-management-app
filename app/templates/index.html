@@ -100,7 +100,7 @@
                                     <td>{{ asset.category.name if asset.category else "Missing" }}</td>
                                     <td>
                                         {% if asset.warranty_expiry_date %}
-                                            {{ asset.warranty_expiry_date }}
+                                            {{ asset.warranty_expiry_date|fmt_date }}
                                         {% else %}
                                             -
                                         {% endif %}
