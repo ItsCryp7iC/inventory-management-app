@@ -124,10 +124,11 @@
                             <td>{{ asset.purchase_date or "-" }}</td>
                             <td>{{ asset.warranty_expiry_date or "-" }}</td>
                             <td>
-                                <a href="{{ url_for('assets.edit_asset', asset_id=asset.id) }}"
-                                class="btn btn-sm btn-outline-secondary">
-                                    Edit
-                                </a>
+                                {% if current_user.is_authenticated and current_user.is_admin %}
+                                <a href="{{ url_for('assets.edit_asset', asset_id=asset.id) }}">Edit</a>
+                                {% else %}
+                                <span class="text-muted">View</span>
+                                {% endif %}
                             </td>
                         </tr>
                         {% endfor %}

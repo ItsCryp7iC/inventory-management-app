@@ -335,10 +335,13 @@
 {% endif %}
 
 
+{% if current_user.is_authenticated and current_user.is_admin %}
 <div class="card shadow-sm">
     <div class="card-body">
         <h5 class="border-bottom pb-2 mb-3">Actions</h5>
+
         <div class="d-flex flex-wrap gap-2">
+
             <!-- Assign / Unassign -->
             {% if asset.assigned_to %}
                 <form method="post"
@@ -379,11 +382,6 @@
                 </form>
             {% endif %}
 
-            <!-- Future features (still disabled) -->
-            <button class="btn btn-outline-warning btn-sm" disabled>Mark as Faulty (Coming Soon)</button>
-            <button class="btn btn-outline-secondary btn-sm" disabled>Transfer (Coming Soon)</button>
-            <button class="btn btn-outline-info btn-sm" disabled>Movement Log (Coming Soon)</button>
-
             <!-- Retire -->
             <form method="post"
                   action="{{ url_for('assets.retire_asset', asset_id=asset.id) }}"
@@ -391,7 +389,7 @@
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <button type="submit"
                         class="btn btn-outline-dark btn-sm"
-                        onclick="return confirm('Mark this asset as RETIRED? It will no longer be considered active, but will stay in the records.');">
+                        onclick="return confirm('Mark this asset as RETIRED? It will stay in records.');">
                     Mark as Retired
                 </button>
             </form>
@@ -403,13 +401,20 @@
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <button type="submit"
                         class="btn btn-outline-danger btn-sm"
-                        onclick="return confirm('Mark this asset as DISPOSED? This is usually final and should be done only after disposal is verified.');">
+                        onclick="return confirm('Mark this asset as DISPOSED? This is usually final.');">
                     Mark as Disposed
                 </button>
             </form>
+
         </div>
     </div>
 </div>
+{% else %}
+<div class="alert alert-secondary small">
+    You have read-only access. Contact an administrator to make changes.
+</div>
+{% endif %}
+
 
 
 {% endblock %}

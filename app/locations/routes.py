@@ -7,6 +7,8 @@ from flask_wtf import FlaskForm
 from wtforms import StringField, TextAreaField, BooleanField, SubmitField
 from wtforms.validators import DataRequired, Length, Optional
 from flask_login import login_required
+from app.auth.decorators import admin_required
+
 
 class LocationForm(FlaskForm):
     name = StringField("Location Name", validators=[DataRequired(), Length(max=100)])
@@ -17,14 +19,14 @@ class LocationForm(FlaskForm):
 
 
 @bp.route("/")
-@login_required
+@admin_required
 def list_locations():
     locations = Location.query.order_by(Location.name.asc()).all()
     return render_template("locations/list.html", locations=locations)
 
 
 @bp.route("/new", methods=["GET", "POST"])
-@login_required
+@admin_required
 def create_location():
     form = LocationForm()
 
@@ -44,7 +46,7 @@ def create_location():
 
 
 @bp.route("/<int:location_id>/edit", methods=["GET", "POST"])
-@login_required
+@admin_required
 def edit_location(location_id):
     loc = Location.query.get_or_404(location_id)
     form = LocationForm(obj=loc)
