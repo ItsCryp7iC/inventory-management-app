@@ -6,6 +6,7 @@
 document.addEventListener("DOMContentLoaded", function () {
     const btn = document.getElementById("theme-toggle-btn");
     const label = document.getElementById("theme-label");
+    const sidebarToggle = document.getElementById("sidebar-toggle");
 
     function applyTheme(theme) {
         document.documentElement.setAttribute("data-theme", theme);
@@ -20,5 +21,29 @@ document.addEventListener("DOMContentLoaded", function () {
         const nextTheme = currentTheme === "dark" ? "light" : "dark";
         applyTheme(nextTheme);
         location.reload(); // ensures Bootstrap recalculates colors cleanly
+    });
+
+    // Sidebar collapse toggle
+    const sidebarStateKey = "sidebar-collapsed";
+    const body = document.body;
+
+    function applySidebar(collapsed) {
+        if (collapsed) {
+            body.classList.add("sidebar-collapsed");
+            if (sidebarToggle) sidebarToggle.textContent = "»";
+            localStorage.setItem(sidebarStateKey, "1");
+        } else {
+            body.classList.remove("sidebar-collapsed");
+            if (sidebarToggle) sidebarToggle.textContent = "«";
+            localStorage.removeItem(sidebarStateKey);
+        }
+    }
+
+    const storedSidebar = localStorage.getItem(sidebarStateKey) === "1";
+    applySidebar(storedSidebar);
+
+    sidebarToggle?.addEventListener("click", () => {
+        const collapsed = body.classList.contains("sidebar-collapsed");
+        applySidebar(!collapsed);
     });
 });
