@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block title %}Users{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between mb-3">
+    <h1 class="h4">Users</h1>
+    <a href="{{ url_for('admin.create_user') }}" class="btn btn-primary btn-sm">
+        New User
+    </a>
+</div>
+
+<table class="table table-sm align-middle">
+    <thead>
+        <tr>
+            <th>Username</th>
+            <th>Admin</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+    {% for u in users %}
+        <tr>
+            <td>{{ u.username }}</td>
+            <td>
+                {% if u.is_admin %}
+                    <span class="badge bg-success">Admin</span>
+                {% else %}
+                    <span class="badge bg-secondary">User</span>
+                {% endif %}
+            </td>
+            <td class="d-flex gap-2">
+                {% if u.id != current_user.id %}
+                <form method="post" action="{{ url_for('admin.toggle_admin', user_id=u.id) }}">
+                    {{ form.hidden_tag() }}
+                    <button class="btn btn-outline-warning btn-sm">Toggle Admin</button>
+                </form>
+                {% endif %}
+                <a href="{{ url_for('admin.reset_password', user_id=u.id) }}"
+                   class="btn btn-outline-danger btn-sm">
+                    Reset Password
+                </a>
+            </td>
+        </tr>
+    {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

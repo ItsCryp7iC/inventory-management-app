@@ -33,6 +33,9 @@ def create_app():
     from .auth import bp as auth_bp
     app.register_blueprint(auth_bp)
 
+    from .admin import bp as admin_bp
+    app.register_blueprint(admin_bp)
+
     # Global Jinja helpers
     from datetime import date, timedelta
     app.jinja_env.globals["date"] = date
