@@ -12,12 +12,6 @@ from app.auth.decorators import admin_required
 
 class VendorForm(FlaskForm):
     name = StringField("Vendor Name", validators=[DataRequired(), Length(max=150)])
-    code = StringField(
-        "Vendor Code",
-        validators=[Optional(), Length(max=20)],
-        filters=[lambda x: x.strip().upper() if x else x],
-        description="If left blank, code will be auto-generated (e.g., V001)."
-    )
     contact_email = StringField("Contact Email", validators=[Optional(), Length(max=150)])
     contact_phone = StringField("Contact Phone", validators=[Optional(), Length(max=50)])
     website = StringField("Website", validators=[Optional(), Length(max=200)])
@@ -108,14 +102,9 @@ def create_vendor():
     form = VendorForm()
 
     if form.validate_on_submit():
-        code = form.code.data or _generate_vendor_code()
-        if Vendor.query.filter_by(code=code).first():
-            flash("Vendor code already exists. Please use a unique code.", "danger")
-            return render_template("vendors/form.html", form=form, is_edit=False)
-
         vendor = Vendor(
             name=form.name.data,
-            code=code,
+            code=_generate_vendor_code(),
             contact_email=form.contact_email.data or None,
             contact_phone=form.contact_phone.data or None,
             website=form.website.data or None,
@@ -136,11 +125,6 @@ def edit_vendor(vendor_id):
     form = VendorForm(obj=vendor)
 
     if form.validate_on_submit():
-        if form.code.data:
-            if form.code.data != vendor.code and Vendor.query.filter_by(code=form.code.data).first():
-                flash("Vendor code already exists. Please use a unique code.", "danger")
-                return render_template("vendors/form.html", form=form, is_edit=True, vendor=vendor)
-            vendor.code = form.code.data
         vendor.name = form.name.data
         vendor.contact_email = form.contact_email.data or None
         vendor.contact_phone = form.contact_phone.data or None
