@@ -19,90 +19,92 @@
 </head>
 <body>
 
-<nav class="navbar navbar-expand-lg border-bottom mb-3">
-    <div class="container-fluid">
-        <a class="navbar-brand fw-bold" href="{{ url_for('main.index') }}">
-            {{ get_setting("app_name", "IT Inventory") }}
-        </a>
+<div class="app-shell">
+    <nav class="navbar navbar-expand-lg border-bottom mb-3 rounded-3 px-3">
+        <div class="container-fluid">
+            <a class="navbar-brand fw-bold" href="{{ url_for('main.index') }}">
+                {{ get_setting("app_name", "IT Inventory") }}
+            </a>
 
-        <div class="d-flex align-items-center gap-2">
-            <span class="small" id="theme-label">Dark</span>
-            <button
-                class="btn btn-sm btn-outline-secondary"
-                type="button"
-                id="theme-toggle-btn"
-            >
-                Toggle theme
-            </button>
-            
-            {% if current_user.is_authenticated %}
-                <span class="small text-muted">Hello, {{ current_user.username }}</span>
-                <a href="{{ url_for('auth.logout') }}" class="btn btn-outline-danger btn-sm">Logout</a>
-            {% else %}
-                <a href="{{ url_for('auth.login') }}" class="btn btn-outline-primary btn-sm">Login</a>
-            {% endif %}
-        </div>
-    </div>
-</nav>
-
-<div class="container-fluid">
-    <div class="row">
-        <!-- Sidebar -->
-        <aside class="col-12 col-md-3 col-lg-2 mb-3">
-            <div class="list-group small">
-                {% if current_user.is_authenticated and current_user.is_admin %}
-                    <a href="{{ url_for('main.index') }}" class="list-group-item list-group-item-action{% if request.endpoint == 'main.index' %} active{% endif %}">
-                        Dashboard
-                    </a>
-                    <a href="{{ url_for('assets.list_assets') }}" class="list-group-item list-group-item-action{% if request.endpoint and request.endpoint.startswith('assets.') %} active{% endif %}">
-                        Assets
-                    </a>
-                    
-                    <a href="{{ url_for('categories.list_categories') }}"
-                    class="list-group-item list-group-item-action{% if request.endpoint and request.endpoint.startswith('categories.') %} active{% endif %}">
-                        Categories
-                    </a>
-
-                    <a href="{{ url_for('locations.list_locations') }}"
-                    class="list-group-item list-group-item-action{% if request.endpoint and request.endpoint.startswith('locations.') %} active{% endif %}">
-                        Locations
-                    </a>
-
-                    <a href="{{ url_for('vendors.list_vendors') }}"
-                    class="list-group-item list-group-item-action{% if request.endpoint and request.endpoint.startswith('vendors.') %} active{% endif %}">
-                        Vendors
-                    </a>
-
-                    <a href="{{ url_for('settings.general_settings') }}"
-                    class="list-group-item list-group-item-action{% if request.endpoint and request.endpoint.startswith('settings.') %} active{% endif %}">
-                        Settings
-                    </a>
-
-                    <a href="{{ url_for('admin.list_users') }}"
-                    class="list-group-item list-group-item-action">
-                        Users
-                    </a>
+            <div class="d-flex align-items-center gap-2">
+                <span class="small" id="theme-label">Dark</span>
+                <button
+                    class="btn btn-sm btn-outline-secondary"
+                    type="button"
+                    id="theme-toggle-btn"
+                >
+                    Toggle theme
+                </button>
+                
+                {% if current_user.is_authenticated %}
+                    <span class="small text-muted">Hello, {{ current_user.username }}</span>
+                    <a href="{{ url_for('auth.logout') }}" class="btn btn-outline-danger btn-sm">Logout</a>
+                {% else %}
+                    <a href="{{ url_for('auth.login') }}" class="btn btn-outline-primary btn-sm">Login</a>
                 {% endif %}
             </div>
-        </aside>
+        </div>
+    </nav>
 
-        <!-- Main content -->
-        <main class="col-12 col-md-9 col-lg-10">
-                        <!-- Flash messages -->
-            {% with messages = get_flashed_messages(with_categories=true) %}
-                {% if messages %}
-                    <div class="mb-3">
-                        {% for category, message in messages %}
-                            <div class="alert alert-{{ 'success' if category == 'success' else 'danger' }} alert-sm py-2 mb-2">
-                                {{ message }}
-                            </div>
-                        {% endfor %}
-                    </div>
-                {% endif %}
-            {% endwith %}
-            {% block content %}
-            {% endblock %}
-        </main>
+    <div class="container-fluid">
+        <div class="row">
+            <!-- Sidebar -->
+            <aside class="col-12 col-md-3 col-lg-2 mb-3">
+                <div class="list-group small sidebar-nav">
+                    {% if current_user.is_authenticated and current_user.is_admin %}
+                        <a href="{{ url_for('main.index') }}" class="list-group-item list-group-item-action{% if request.endpoint == 'main.index' %} active{% endif %}">
+                            Dashboard
+                        </a>
+                        <a href="{{ url_for('assets.list_assets') }}" class="list-group-item list-group-item-action{% if request.endpoint and request.endpoint.startswith('assets.') %} active{% endif %}">
+                            Assets
+                        </a>
+                        
+                        <a href="{{ url_for('categories.list_categories') }}"
+                        class="list-group-item list-group-item-action{% if request.endpoint and request.endpoint.startswith('categories.') %} active{% endif %}">
+                            Categories
+                        </a>
+
+                        <a href="{{ url_for('locations.list_locations') }}"
+                        class="list-group-item list-group-item-action{% if request.endpoint and request.endpoint.startswith('locations.') %} active{% endif %}">
+                            Locations
+                        </a>
+
+                        <a href="{{ url_for('vendors.list_vendors') }}"
+                        class="list-group-item list-group-item-action{% if request.endpoint and request.endpoint.startswith('vendors.') %} active{% endif %}">
+                            Vendors
+                        </a>
+
+                        <a href="{{ url_for('settings.general_settings') }}"
+                        class="list-group-item list-group-item-action{% if request.endpoint and request.endpoint.startswith('settings.') %} active{% endif %}">
+                            Settings
+                        </a>
+
+                        <a href="{{ url_for('admin.list_users') }}"
+                        class="list-group-item list-group-item-action">
+                            Users
+                        </a>
+                    {% endif %}
+                </div>
+            </aside>
+
+            <!-- Main content -->
+            <main class="col-12 col-md-9 col-lg-10">
+                            <!-- Flash messages -->
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                        <div class="mb-3">
+                            {% for category, message in messages %}
+                                <div class="alert alert-{{ 'success' if category == 'success' else 'danger' }} alert-sm py-2 mb-2">
+                                    {{ message }}
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                {% endwith %}
+                {% block content %}
+                {% endblock %}
+            </main>
+        </div>
     </div>
 </div>
 
