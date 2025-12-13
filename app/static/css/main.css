@@ -41,12 +41,15 @@ html[data-theme="light"] {
 }
 
 /* Base */
+html {
+  background: var(--bg) fixed center top / cover no-repeat !important;
+}
+
 body {
   min-height: 100vh;
-  background: var(--bg) !important;
+  background: transparent !important;
   color: var(--text) !important;
   font-family: "Inter", "Segoe UI", system-ui, -apple-system, sans-serif;
-  background-attachment: fixed;
 }
 
 .app-shell {
