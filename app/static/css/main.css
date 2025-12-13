@@ -324,6 +324,50 @@ html[data-theme="dark"] .btn-close {
     background: rgba(251, 113, 133, 0.12) !important;
 }
 
+/* Theme switch */
+.theme-switch {
+  position: relative;
+  width: 84px;
+  height: 34px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: linear-gradient(135deg, rgba(34, 211, 238, 0.18), rgba(59, 130, 246, 0.12));
+  padding: 4px 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  color: var(--text);
+  font-size: 14px;
+  cursor: pointer;
+  transition: border-color 0.2s ease, background 0.2s ease;
+}
+
+.theme-switch .theme-thumb {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 36px;
+  height: 28px;
+  border-radius: 12px;
+  background: rgba(0, 0, 0, 0.24);
+  box-shadow: 0 10px 25px rgba(0,0,0,0.25);
+  transition: transform 0.2s ease, background 0.2s ease;
+}
+
+.theme-switch .theme-icon {
+  position: relative;
+  z-index: 2;
+}
+
+.theme-switch[data-theme="light"] .theme-thumb {
+  transform: translateX(42px);
+  background: rgba(255, 255, 255, 0.75);
+}
+
+.theme-switch[data-theme="light"] {
+  background: linear-gradient(135deg, rgba(14, 165, 233, 0.25), rgba(236, 72, 153, 0.15));
+}
+
 /* Modern dropdown look for searchable inputs */
 .modern-dropdown {
     position: relative;

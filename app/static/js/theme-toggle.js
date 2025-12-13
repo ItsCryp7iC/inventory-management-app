@@ -5,22 +5,21 @@
 
 document.addEventListener("DOMContentLoaded", function () {
     const btn = document.getElementById("theme-toggle-btn");
-    const label = document.getElementById("theme-label");
     const sidebarToggle = document.getElementById("sidebar-toggle");
 
     function applyTheme(theme) {
         document.documentElement.setAttribute("data-theme", theme);
         localStorage.setItem("theme", theme);
-        if (label) label.textContent = theme.charAt(0).toUpperCase() + theme.slice(1);
+        if (btn) btn.setAttribute("data-theme", theme);
     }
 
-    const currentTheme = document.documentElement.getAttribute("data-theme");
-    if (label) label.textContent = currentTheme.charAt(0).toUpperCase() + currentTheme.slice(1);
+    const initialTheme = document.documentElement.getAttribute("data-theme") || "dark";
+    applyTheme(initialTheme);
 
     btn?.addEventListener("click", () => {
-        const nextTheme = currentTheme === "dark" ? "light" : "dark";
-        applyTheme(nextTheme);
-        location.reload(); // ensures Bootstrap recalculates colors cleanly
+        const current = document.documentElement.getAttribute("data-theme") || "dark";
+        const next = current === "dark" ? "light" : "dark";
+        applyTheme(next);
     });
 
     // Sidebar collapse toggle

@@ -27,15 +27,18 @@
             </a>
 
             <div class="d-flex align-items-center gap-2">
-                <span class="small" id="theme-label">Dark</span>
                 <button
-                    class="btn btn-sm btn-outline-secondary"
+                    class="theme-switch"
                     type="button"
                     id="theme-toggle-btn"
+                    aria-label="Toggle theme"
+                    data-theme="dark"
                 >
-                    Toggle theme
+                    <span class="theme-icon sun">☀</span>
+                    <span class="theme-icon moon">🌙</span>
+                    <span class="theme-thumb"></span>
                 </button>
-                
+
                 {% if current_user.is_authenticated %}
                     <span class="small text-muted">Hello, {{ current_user.username }}</span>
                     <a href="{{ url_for('auth.logout') }}" class="btn btn-outline-danger btn-sm">Logout</a>
