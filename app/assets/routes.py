@@ -181,8 +181,15 @@ def list_assets():
     status = request.args.get("status", "").strip()
     location_id = request.args.get("location_id", "").strip()
     q = request.args.get("q", "").strip()
+    sort = request.args.get("sort", "id").strip()
+    direction = request.args.get("dir", "desc").strip().lower()
 
-    query = Asset.query
+    query = (
+        Asset.query
+        .outerjoin(Category, Asset.category_id == Category.id)
+        .outerjoin(SubCategory, Asset.subcategory_id == SubCategory.id)
+        .outerjoin(Location, Asset.location_id == Location.id)
+    )
 
     if status:
         query = query.filter(Asset.status == status)
@@ -200,7 +207,22 @@ def list_assets():
             )
         )
 
-    assets = query.order_by(Asset.id.desc()).all()
+    sort_map = {
+        "id": Asset.id,
+        "asset_tag": Asset.asset_tag,
+        "name": Asset.name,
+        "status": Asset.status,
+        "purchase_date": Asset.purchase_date,
+        "warranty_expiry_date": Asset.warranty_expiry_date,
+        "category": Category.name,
+        "subcategory": SubCategory.name,
+        "location": Location.name,
+        "created_at": Asset.created_at,
+    }
+
+    sort_col = sort_map.get(sort, Asset.id)
+    sort_func = sort_col.desc if direction == "desc" else sort_col.asc
+    assets = query.order_by(sort_func()).all()
 
     locations = Location.query.order_by(Location.name).all()
     status_choices = [
@@ -221,6 +243,8 @@ def list_assets():
         q=q,
         locations=locations,
         status_choices=status_choices,
+        sort=sort,
+        direction=direction,
     )
 
 

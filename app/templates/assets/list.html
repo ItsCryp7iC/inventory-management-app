@@ -66,15 +66,56 @@
                 <table class="table table-sm align-middle mb-0">
                     <thead>
                         <tr>
-                            <th>ID</th>
-                            <th>Asset Tag</th>
-                            <th>Name</th>
-                            <th>Category</th>
-                            <th>Sub-Category</th>
-                            <th>Location</th>
-                            <th>Status</th>
-                            <th>Purchase Date</th>
-                            <th>Warranty Expiry</th>
+                            {% set dir_toggle = "asc" if direction == "desc" else "desc" %}
+                            <th style="width:60px;">Sl No.</th>
+                            <th>
+                                <a class="text-decoration-none"
+                                   href="{{ url_for('assets.list_assets', status=status, location_id=location_id, q=q, sort='asset_tag', dir=dir_toggle if sort=='asset_tag' else 'asc') }}">
+                                    Asset Tag
+                                </a>
+                            </th>
+                            <th>
+                                <a class="text-decoration-none"
+                                   href="{{ url_for('assets.list_assets', status=status, location_id=location_id, q=q, sort='name', dir=dir_toggle if sort=='name' else 'asc') }}">
+                                    Name
+                                </a>
+                            </th>
+                            <th>
+                                <a class="text-decoration-none"
+                                   href="{{ url_for('assets.list_assets', status=status, location_id=location_id, q=q, sort='category', dir=dir_toggle if sort=='category' else 'asc') }}">
+                                    Category
+                                </a>
+                            </th>
+                            <th>
+                                <a class="text-decoration-none"
+                                   href="{{ url_for('assets.list_assets', status=status, location_id=location_id, q=q, sort='subcategory', dir=dir_toggle if sort=='subcategory' else 'asc') }}">
+                                    Sub-Category
+                                </a>
+                            </th>
+                            <th>
+                                <a class="text-decoration-none"
+                                   href="{{ url_for('assets.list_assets', status=status, location_id=location_id, q=q, sort='location', dir=dir_toggle if sort=='location' else 'asc') }}">
+                                    Location
+                                </a>
+                            </th>
+                            <th>
+                                <a class="text-decoration-none"
+                                   href="{{ url_for('assets.list_assets', status=status, location_id=location_id, q=q, sort='status', dir=dir_toggle if sort=='status' else 'asc') }}">
+                                    Status
+                                </a>
+                            </th>
+                            <th>
+                                <a class="text-decoration-none"
+                                   href="{{ url_for('assets.list_assets', status=status, location_id=location_id, q=q, sort='purchase_date', dir=dir_toggle if sort=='purchase_date' else 'asc') }}">
+                                    Purchase Date
+                                </a>
+                            </th>
+                            <th>
+                                <a class="text-decoration-none"
+                                   href="{{ url_for('assets.list_assets', status=status, location_id=location_id, q=q, sort='warranty_expiry_date', dir=dir_toggle if sort=='warranty_expiry_date' else 'asc') }}">
+                                    Warranty Expiry
+                                </a>
+                            </th>
                             <th>Actions</th>
                         </tr>
                     </thead>
@@ -82,7 +123,7 @@
                     <tbody>
                         {% for asset in assets %}
                         <tr>
-                            <td>{{ asset.id }}</td>
+                            <td class="text-muted">{{ loop.index }}</td>
                             <td>
                                 <a href="{{ url_for('assets.asset_detail', asset_id=asset.id) }}" 
                                 class="text-decoration-none">
