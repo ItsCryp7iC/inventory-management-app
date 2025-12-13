@@ -1,9 +1,12 @@
 from __future__ import annotations
 
-from datetime import date
+from datetime import date, datetime
+import io
+import csv
+from decimal import Decimal
 from typing import Optional
 
-from flask import render_template, redirect, url_for, flash, request
+from flask import render_template, redirect, url_for, flash, request, abort
 from flask_login import login_required, current_user
 
 from . import bp
@@ -183,6 +186,7 @@ def list_assets():
     q = request.args.get("q", "").strip()
     sort = request.args.get("sort", "id").strip()
     direction = request.args.get("dir", "desc").strip().lower()
+    export = request.args.get("export", "").strip()
 
     query = (
         Asset.query
@@ -223,6 +227,12 @@ def list_assets():
     sort_col = sort_map.get(sort, Asset.id)
     sort_func = sort_col.desc if direction == "desc" else sort_col.asc
     assets = query.order_by(sort_func()).all()
+
+    # Handle export toggle quickly (admin only)
+    if export == "csv":
+        if not current_user.is_authenticated or not current_user.is_admin:
+            abort(403)
+        return export_assets_csv(assets)
 
     locations = Location.query.order_by(Location.name).all()
     status_choices = [
@@ -710,3 +720,233 @@ def mark_missing(asset_id):
     db.session.commit()
     flash("Asset marked as missing.", "success")
     return redirect(url_for("assets.asset_detail", asset_id=asset.id))
+
+
+# ----------------------------
+# CSV Export / Import
+# ----------------------------
+
+EXPORT_HEADERS = [
+    "asset_tag",
+    "name",
+    "status",
+    "category_code",
+    "subcategory_name",
+    "location_code",
+    "vendor_name",
+    "serial_number",
+    "purchase_date",
+    "warranty_expiry_date",
+    "cost",
+    "description",
+    "notes",
+]
+
+ALLOWED_STATUSES = {"in_stock", "in_use", "repair", "damaged", "missing", "disposed"}
+
+
+@admin_required
+def export_assets_csv(assets):
+    """Return a CSV response for the given assets list."""
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow(EXPORT_HEADERS)
+
+    for a in assets:
+        writer.writerow([
+            a.asset_tag or "",
+            a.name or "",
+            a.status or "",
+            a.category.code if a.category else "",
+            a.subcategory.name if a.subcategory else "",
+            a.location.code if a.location else "",
+            a.vendor.name if a.vendor else "",
+            a.serial_number or "",
+            a.purchase_date or "",
+            a.warranty_expiry_date or "",
+            a.cost or "",
+            (a.description or "").replace("\n", " ").strip(),
+            (a.notes or "").replace("\n", " ").strip(),
+        ])
+
+    csv_data = output.getvalue()
+    output.close()
+
+    from flask import Response
+    return Response(
+        csv_data,
+        mimetype="text/csv",
+        headers={
+            "Content-Disposition": "attachment; filename=assets_export.csv"
+        }
+    )
+
+
+@bp.route("/import", methods=["GET", "POST"])
+@admin_required
+def import_assets():
+    if request.method == "GET":
+        return redirect(url_for("settings.general_settings"))
+
+    if request.method == "POST":
+        file = request.files.get("file")
+        if not file or file.filename == "":
+            flash("Please upload a CSV file.", "danger")
+            return redirect(url_for("assets.import_assets"))
+
+        try:
+            content = file.read().decode("utf-8-sig")
+        except Exception:
+            flash("Could not read the uploaded file. Ensure it is valid UTF-8.", "danger")
+            return redirect(url_for("assets.import_assets"))
+
+        reader = csv.DictReader(io.StringIO(content))
+        missing_headers = [h for h in ["name", "status", "category_code", "location_code"] if h not in reader.fieldnames]
+        if missing_headers:
+            flash(f"Missing required headers: {', '.join(missing_headers)}", "danger")
+            return redirect(url_for("assets.import_assets"))
+
+        created = 0
+        errors = []
+        row_num = 1  # header
+
+        for row in reader:
+            row_num += 1
+            name = (row.get("name") or "").strip()
+            status = (row.get("status") or "").strip().lower() or "in_stock"
+            category_code = (row.get("category_code") or "").strip().upper()
+            subcategory_name = (row.get("subcategory_name") or "").strip()
+            location_code = (row.get("location_code") or "").strip().upper()
+            vendor_name = (row.get("vendor_name") or "").strip()
+            asset_tag = (row.get("asset_tag") or "").strip()
+            serial_number = (row.get("serial_number") or "").strip()
+            purchase_date_raw = (row.get("purchase_date") or "").strip()
+            warranty_date_raw = (row.get("warranty_expiry_date") or "").strip()
+            cost_raw = (row.get("cost") or "").strip()
+            description = (row.get("description") or "").strip()
+            notes = (row.get("notes") or "").strip()
+
+            if not name:
+                errors.append(f"Row {row_num}: name is required.")
+                continue
+
+            if status not in ALLOWED_STATUSES:
+                errors.append(f"Row {row_num}: invalid status '{status}'.")
+                continue
+
+            if not category_code:
+                errors.append(f"Row {row_num}: category_code is required.")
+                continue
+
+            if not location_code:
+                errors.append(f"Row {row_num}: location_code is required.")
+                continue
+
+            category = Category.query.filter_by(code=category_code).first()
+            if not category:
+                errors.append(f"Row {row_num}: category code '{category_code}' not found.")
+                continue
+
+            location = Location.query.filter_by(code=location_code).first()
+            if not location:
+                errors.append(f"Row {row_num}: location code '{location_code}' not found.")
+                continue
+
+            subcategory = None
+            if subcategory_name:
+                subcategory = (
+                    SubCategory.query
+                    .filter(SubCategory.name == subcategory_name, SubCategory.category_id == category.id)
+                    .first()
+                )
+                if not subcategory:
+                    errors.append(f"Row {row_num}: subcategory '{subcategory_name}' not found under category '{category_code}'.")
+                    continue
+
+            vendor = None
+            if vendor_name:
+                vendor = Vendor.query.filter_by(name=vendor_name).first()
+                if not vendor:
+                    vendor = Vendor(name=vendor_name)
+                    db.session.add(vendor)
+                    db.session.flush()
+
+            # Dates
+            def parse_date(val, label):
+                if not val:
+                    return None
+                try:
+                    return datetime.strptime(val, "%Y-%m-%d").date()
+                except ValueError:
+                    errors.append(f"Row {row_num}: {label} must be YYYY-MM-DD.")
+                    return None
+
+            purchase_date = parse_date(purchase_date_raw, "purchase_date")
+            warranty_date = parse_date(warranty_date_raw, "warranty_expiry_date")
+
+            if any(err.startswith(f"Row {row_num}:") for err in errors):
+                continue
+
+            # Cost
+            cost_val = None
+            if cost_raw:
+                try:
+                    cost_val = Decimal(cost_raw)
+                except Exception:
+                    errors.append(f"Row {row_num}: cost must be a number.")
+                    continue
+
+            # Asset tag
+            if asset_tag:
+                existing = Asset.query.filter_by(asset_tag=asset_tag).first()
+                if existing:
+                    errors.append(f"Row {row_num}: asset_tag '{asset_tag}' already exists.")
+                    continue
+            else:
+                try:
+                    asset_tag = generate_asset_tag(location, category, date.today().year)
+                except Exception as exc:
+                    errors.append(f"Row {row_num}: could not generate tag ({exc}).")
+                    continue
+
+            asset = Asset(
+                asset_tag=asset_tag,
+                name=name,
+                status=status,
+                category_id=category.id,
+                subcategory_id=subcategory.id if subcategory else None,
+                location_id=location.id,
+                vendor_id=vendor.id if vendor else None,
+                serial_number=serial_number or None,
+                purchase_date=purchase_date,
+                warranty_expiry_date=warranty_date,
+                cost=cost_val,
+                description=description or None,
+                notes=notes or None,
+            )
+            db.session.add(asset)
+            db.session.flush()
+
+            log_asset_event(
+                asset=asset,
+                event_type="created",
+                note="Asset imported via CSV",
+                to_status=asset.status,
+                to_location_id=asset.location_id,
+            )
+
+            created += 1
+
+        if errors:
+            db.session.rollback()
+            for err in errors:
+                flash(err, "danger")
+            if created:
+                flash(f"{created} assets were created before errors occurred; nothing was saved. Fix errors and try again.", "warning")
+            return redirect(url_for("assets.import_assets"))
+
+        db.session.commit()
+        flash(f"Imported {created} assets successfully.", "success")
+        return redirect(url_for("assets.list_assets"))
+
+    return render_template("assets/import.html", headers=EXPORT_HEADERS)

@@ -50,7 +50,18 @@ def general_settings():
         form.app_name.data = get_setting_value("app_name", "IT Inventory")
         form.support_email.data = get_setting_value("support_email", "")
 
+    from app.assets.routes import EXPORT_HEADERS
+
     return render_template(
         "settings/index.html",
         form=form,
+        export_headers=EXPORT_HEADERS,
     )
+
+
+@bp.route("/import-export")
+@login_required
+@admin_required
+def import_export():
+    from app.assets.routes import EXPORT_HEADERS  # reuse headers
+    return render_template("settings/import_export.html", headers=EXPORT_HEADERS)
