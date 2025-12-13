@@ -318,10 +318,15 @@ def create_asset():
     form = AssetForm()
     _populate_form_choices(form)
 
+    # Default purchase date to today on initial load
+    if request.method == "GET" and not form.purchase_date.data:
+        form.purchase_date.data = date.today()
+
     if form.validate_on_submit():
         # We must have Location + Category to generate tag
         location_id = _normalize_id(form.location_id.data)
         category_id = _normalize_id(form.category_id.data)
+        action = request.form.get("action", "save")
 
         location = Location.query.get(location_id) if location_id else None
         category = Category.query.get(category_id) if category_id else None
@@ -365,12 +370,25 @@ def create_asset():
 
         db.session.commit()
         flash(f"Asset created successfully: {asset.asset_tag}", "success")
+        if action == "add_new":
+            return redirect(url_for("assets.create_asset"))
         return redirect(url_for("assets.asset_detail", asset_id=asset.id))
 
     if form.errors:
         flash("Please correct the errors in the form.", "danger")
 
-    return render_template("assets/create.html", form=form)
+    subcategories = SubCategory.query.order_by(SubCategory.name).all()
+    subcategory_options = [
+        {
+            "id": sc.id,
+            "name": sc.name,
+            "category_id": sc.category_id,
+            "label": f"{sc.category.name} - {sc.name}" if sc.category else sc.name,
+        }
+        for sc in subcategories
+    ]
+
+    return render_template("assets/create.html", form=form, subcategory_options=subcategory_options)
 
 
 @bp.route("/<int:asset_id>/edit", methods=["GET", "POST"])
@@ -409,7 +427,18 @@ def edit_asset(asset_id):
     if form.errors and request.method == "POST":
         flash("Please correct the errors in the form.", "danger")
 
-    return render_template("assets/create.html", form=form, is_edit=True, asset=asset)
+    subcategories = SubCategory.query.order_by(SubCategory.name).all()
+    subcategory_options = [
+        {
+            "id": sc.id,
+            "name": sc.name,
+            "category_id": sc.category_id,
+            "label": f"{sc.category.name} - {sc.name}" if sc.category else sc.name,
+        }
+        for sc in subcategories
+    ]
+
+    return render_template("assets/create.html", form=form, is_edit=True, asset=asset, subcategory_options=subcategory_options)
 
 
 @bp.route("/<int:asset_id>")

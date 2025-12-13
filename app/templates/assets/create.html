@@ -65,7 +65,7 @@
 
                 <div class="col-md-4">
                     <label class="form-label">{{ form.category_id.label }}</label>
-                    {{ form.category_id(class="form-select") }}
+                    {{ form.category_id(class="form-select", id="category-select") }}
                     {% for err in form.category_id.errors %}
                         <div class="text-danger small">{{ err }}</div>
                     {% endfor %}
@@ -73,7 +73,18 @@
 
                 <div class="col-md-4">
                     <label class="form-label">{{ form.subcategory_id.label }}</label>
-                    {{ form.subcategory_id(class="form-select") }}
+                    <select name="{{ form.subcategory_id.name }}" id="subcategory-select" class="form-select">
+                        <option value="0">--- Select ---</option>
+                        {% for sc in subcategory_options %}
+                            <option
+                                value="{{ sc.id }}"
+                                data-category="{{ sc.category_id }}"
+                                {% if form.subcategory_id.data == sc.id %}selected{% endif %}
+                            >
+                                {{ sc.label }}
+                            </option>
+                        {% endfor %}
+                    </select>
                     {% for err in form.subcategory_id.errors %}
                         <div class="text-danger small">{{ err }}</div>
                     {% endfor %}
@@ -88,7 +99,7 @@
                 </div>
 
                 <div class="col-md-4">
-                    <label class="form-label">{{ form.purchase_date.label }}</label>
+                    <label class="form-label">Purchase Date / Asset Creation Date</label>
                     {{ form.purchase_date(class="form-control", type="date") }}
                     {% for err in form.purchase_date.errors %}
                         <div class="text-danger small">{{ err }}</div>
@@ -120,16 +131,91 @@
                 </div>
 
                 <div class="col-12 mt-2">
-                    <button type="submit" class="btn btn-primary">
+                    <input type="hidden" name="action" id="asset-form-action" value="save">
+                    <button type="submit" class="btn btn-primary me-2">
                         {% if is_edit %}
                             Update
                         {% else %}
                             Save
                         {% endif %}
                     </button>
+                    {% if not is_edit %}
+                    <button type="submit" class="btn btn-outline-primary" data-action="add_new">
+                        Save and Add New
+                    </button>
+                    {% endif %}
                 </div>
             </div>
         </form>
     </div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script>
+    (function () {
+        const categorySelect = document.getElementById("category-select");
+        const subcategorySelect = document.getElementById("subcategory-select");
+        const form = document.querySelector("form");
+        const actionField = document.getElementById("asset-form-action");
+        const serialInput = document.getElementById("serial_number");
+
+        function filterSubcategories() {
+            const selectedCat = categorySelect.value;
+            let firstShown = null;
+            Array.from(subcategorySelect.options).forEach(opt => {
+                if (!opt.dataset.category) {
+                    return; // default option
+                }
+                const matches = selectedCat && opt.dataset.category === selectedCat;
+                opt.hidden = !matches;
+                if (matches && firstShown === null) {
+                    firstShown = opt.value;
+                }
+            });
+            // If current selection doesn't match, reset to default
+            const currentOpt = subcategorySelect.options[subcategorySelect.selectedIndex];
+            if (currentOpt && currentOpt.hidden) {
+                subcategorySelect.value = "0";
+            }
+        }
+
+        categorySelect.addEventListener("change", filterSubcategories);
+        filterSubcategories();
+
+        if (form) {
+            form.addEventListener("keydown", (e) => {
+                const target = e.target;
+
+                // Prevent Enter from submitting while cursor in Serial Number
+                if (e.key === "Enter" && target === serialInput) {
+                    e.preventDefault();
+                    return;
+                }
+
+                // Ctrl+Enter -> Save and Add New
+                if (e.key === "Enter" && e.ctrlKey) {
+                    e.preventDefault();
+                    if (actionField) actionField.value = "add_new";
+                    form.submit();
+                    return;
+                }
+
+                // Plain Enter submits normally (unless textarea to allow new lines)
+                if (e.key === "Enter" && target.tagName !== "TEXTAREA") {
+                    if (actionField) actionField.value = "save";
+                }
+            });
+        }
+
+        // Wire the secondary button to set action
+        document.querySelectorAll("button[data-action]").forEach(btn => {
+            btn.addEventListener("click", (e) => {
+                const act = btn.getAttribute("data-action");
+                if (actionField) actionField.value = act;
+            });
+        });
+    })();
+</script>
 {% endblock %}
