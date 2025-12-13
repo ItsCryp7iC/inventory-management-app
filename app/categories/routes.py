@@ -16,6 +16,11 @@ from app.auth.decorators import admin_required
 # -----------------------------
 class CategoryForm(FlaskForm):
     name = StringField("Category Name", validators=[DataRequired(), Length(max=100)])
+    code = StringField(
+        "Code",
+        validators=[DataRequired(), Length(max=20)],
+        filters=[lambda x: x.strip().upper() if x else x],
+    )
     description = TextAreaField("Description", validators=[Optional(), Length(max=500)])
     submit = SubmitField("Save")
 
@@ -57,6 +62,7 @@ def create_category():
     if form.validate_on_submit():
         cat = Category(
             name=form.name.data,
+            code=form.code.data,
             description=form.description.data or None,
         )
         db.session.add(cat)
@@ -78,6 +84,7 @@ def edit_category(category_id):
 
     if form.validate_on_submit():
         cat.name = form.name.data
+        cat.code = form.code.data
         cat.description = form.description.data or None
         db.session.commit()
         flash("Category updated successfully.", "success")

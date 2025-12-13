@@ -27,11 +27,26 @@
                 <div class="col-md-6">
                     <label class="form-label">{{ form.name.label }}</label>
                     {{ form.name(class="form-control") }}
+                    {% for err in form.name.errors %}
+                        <div class="text-danger small">{{ err }}</div>
+                    {% endfor %}
+                </div>
+
+                <div class="col-md-6">
+                    <label class="form-label">{{ form.code.label }}</label>
+                    {{ form.code(class="form-control") }}
+                    <div class="form-text">Short code used in auto-generated asset tags (e.g., COMP, MONI).</div>
+                    {% for err in form.code.errors %}
+                        <div class="text-danger small">{{ err }}</div>
+                    {% endfor %}
                 </div>
 
                 <div class="col-12">
                     <label class="form-label">{{ form.description.label }}</label>
                     {{ form.description(class="form-control", rows=2) }}
+                    {% for err in form.description.errors %}
+                        <div class="text-danger small">{{ err }}</div>
+                    {% endfor %}
                 </div>
 
                 <div class="col-12 mt-2">

@@ -12,7 +12,11 @@ from app.auth.decorators import admin_required
 
 class LocationForm(FlaskForm):
     name = StringField("Location Name", validators=[DataRequired(), Length(max=100)])
-    code = StringField("Code", validators=[Optional(), Length(max=50)])
+    code = StringField(
+        "Code",
+        validators=[DataRequired(), Length(max=50)],
+        filters=[lambda x: x.strip().upper() if x else x],
+    )
     description = TextAreaField("Description", validators=[Optional(), Length(max=500)])
     is_active = BooleanField("Active")
     submit = SubmitField("Save")
@@ -33,7 +37,7 @@ def create_location():
     if form.validate_on_submit():
         loc = Location(
             name=form.name.data,
-            code=form.code.data or None,
+            code=form.code.data,
             description=form.description.data or None,
             is_active=form.is_active.data,
         )
@@ -53,7 +57,7 @@ def edit_location(location_id):
 
     if form.validate_on_submit():
         loc.name = form.name.data
-        loc.code = form.code.data or None
+        loc.code = form.code.data
         loc.description = form.description.data or None
         loc.is_active = form.is_active.data
 

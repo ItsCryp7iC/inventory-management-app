@@ -1,14 +1,25 @@
+from __future__ import annotations
+
+from datetime import date
+from typing import Optional
+
 from flask import render_template, redirect, url_for, flash, request
+from flask_login import login_required, current_user
+
 from . import bp
+from .forms import AssetForm
 from app.extensions import db
 from app.models import Asset, Location, Category, SubCategory, Vendor, AssetEvent
-from .forms import AssetForm
-from datetime import date
-from flask_login import login_required
-from flask_login import current_user
 from app.auth.decorators import admin_required
 
 
+# ----------------------------
+# Helpers
+# ----------------------------
+
+def _normalize_id(value):
+    """Convert '0' / 0 / empty to None, keep valid int values."""
+    return value if value and value != 0 else None
 
 
 def _populate_form_choices(form: AssetForm):
@@ -18,33 +29,78 @@ def _populate_form_choices(form: AssetForm):
     subcategories = SubCategory.query.order_by(SubCategory.name).all()
     vendors = Vendor.query.order_by(Vendor.name).all()
 
-    form.location_id.choices = [(0, "--- Select ---")] + [
-        (loc.id, loc.name) for loc in locations
-    ]
-    form.category_id.choices = [(0, "--- Select ---")] + [
-        (cat.id, cat.name) for cat in categories
-    ]
+    form.location_id.choices = [(0, "--- Select ---")] + [(loc.id, loc.name) for loc in locations]
+    form.category_id.choices = [(0, "--- Select ---")] + [(cat.id, cat.name) for cat in categories]
     form.subcategory_id.choices = [(0, "--- Select ---")] + [
         (sc.id, f"{sc.category.name} - {sc.name}") for sc in subcategories
     ]
-    form.vendor_id.choices = [(0, "--- Select ---")] + [
-        (v.id, v.name) for v in vendors
-    ]
+    form.vendor_id.choices = [(0, "--- Select ---")] + [(v.id, v.name) for v in vendors]
 
 
-def _normalize_id(value):
-    return value if value and value != 0 else None
+def generate_asset_tag(location: Location, category: Category, year: int) -> str:
+    """
+    Format:
+      ESS-{OfficeCode}-{CategoryCode}-{Year}-{0001}
+
+    Example:
+      ESS-M-COMP-2025-0001
+
+    Sequencing rule: sequence is per Office+Year (shared across all categories
+    for that office/year), so tags increment regardless of category.
+    """
+    company = "ESS"
+
+    office_code = (location.code or "").strip().upper()
+    cat_code = (category.code or "").strip().upper()
+
+    if not office_code:
+        raise ValueError("Location.code missing (expected M/P).")
+    if not cat_code:
+        raise ValueError("Category.code missing (expected COMP/MONI etc.).")
+
+    # Determine the next sequence based on office + year only (ignore category)
+    seq_prefix = f"{company}-{office_code}-"
+    year_str = str(year)
+
+    matching_tags = (
+        Asset.query
+        .with_entities(Asset.asset_tag)
+        .filter(Asset.asset_tag.ilike(f"{seq_prefix}%-{year_str}-%"))
+        .all()
+    )
+
+    max_seq = 0
+    for (tag,) in matching_tags:
+        parts = tag.split("-")
+        if len(parts) < 5:
+            continue
+        # parts: [company, office, category, year, seq]
+        if parts[0] != company or parts[1] != office_code or parts[-2] != year_str:
+            continue
+        try:
+            seq_val = int(parts[-1])
+            if seq_val > max_seq:
+                max_seq = seq_val
+        except ValueError:
+            continue
+
+    next_seq = max_seq + 1
+    return f"{company}-{office_code}-{cat_code}-{year_str}-{next_seq:04d}"
+
 
 def log_asset_event(
     asset: Asset,
     event_type: str,
-    note: str | None = None,
-    from_status: str | None = None,
-    to_status: str | None = None,
-    from_location_id: int | None = None,
-    to_location_id: int | None = None,
+    note: Optional[str] = None,
+    from_status: Optional[str] = None,
+    to_status: Optional[str] = None,
+    from_location_id: Optional[int] = None,
+    to_location_id: Optional[int] = None,
 ):
-    event = AssetEvent(
+    """
+    Add an AssetEvent row. Caller commits.
+    """
+    ev = AssetEvent(
         asset_id=asset.id,
         event_type=event_type,
         note=note,
@@ -54,10 +110,12 @@ def log_asset_event(
         to_location_id=to_location_id,
         performed_by_id=current_user.id if current_user.is_authenticated else None,
     )
-    db.session.add(event)
-    # commit happens in the caller
+    db.session.add(ev)
 
 
+# ----------------------------
+# Routes
+# ----------------------------
 
 @bp.route("/")
 @login_required
@@ -86,9 +144,7 @@ def list_assets():
 
     assets = query.order_by(Asset.id.desc()).all()
 
-    # For filter dropdowns
     locations = Location.query.order_by(Location.name).all()
-
     status_choices = [
         ("", "All statuses"),
         ("in_use", "In Use"),
@@ -115,12 +171,26 @@ def create_asset():
     form = AssetForm()
     _populate_form_choices(form)
 
-    # Default status / location logic you already had...
-    # (leave that part as-is)
-
     if form.validate_on_submit():
+        # We must have Location + Category to generate tag
+        location_id = _normalize_id(form.location_id.data)
+        category_id = _normalize_id(form.category_id.data)
+
+        location = Location.query.get(location_id) if location_id else None
+        category = Category.query.get(category_id) if category_id else None
+
+        if not location or not category:
+            flash("Location and Category are required to generate Asset Tag.", "danger")
+            return render_template("assets/create.html", form=form)
+
+        try:
+            asset_tag = generate_asset_tag(location, category, date.today().year)
+        except ValueError as exc:
+            flash(str(exc), "danger")
+            return render_template("assets/create.html", form=form)
+
         asset = Asset(
-            asset_tag=form.asset_tag.data or None,
+            asset_tag=asset_tag,
             name=form.name.data,
             description=form.description.data or None,
             serial_number=form.serial_number.data or None,
@@ -128,27 +198,27 @@ def create_asset():
             purchase_date=form.purchase_date.data,
             warranty_expiry_date=form.warranty_expiry_date.data,
             cost=form.cost.data,
-            category_id=_normalize_id(form.category_id.data),
+            category_id=category_id,
             subcategory_id=_normalize_id(form.subcategory_id.data),
-            location_id=_normalize_id(form.location_id.data),
+            location_id=location_id,
             vendor_id=_normalize_id(form.vendor_id.data),
             notes=form.notes.data or None,
         )
 
         db.session.add(asset)
-        db.session.flush()  # ensure asset.id exists before logging
+        db.session.flush()  # ensure asset.id exists
 
         log_asset_event(
             asset=asset,
             event_type="created",
-            note="Asset created",
+            note=f"Asset created ({asset.asset_tag})",
             to_status=asset.status,
             to_location_id=asset.location_id,
         )
 
         db.session.commit()
-        flash("Asset created successfully.", "success")
-        return redirect(url_for("assets.list_assets"))
+        flash(f"Asset created successfully: {asset.asset_tag}", "success")
+        return redirect(url_for("assets.asset_detail", asset_id=asset.id))
 
     if form.errors:
         flash("Please correct the errors in the form.", "danger")
@@ -165,7 +235,7 @@ def edit_asset(asset_id):
     _populate_form_choices(form)
 
     if form.validate_on_submit():
-        asset.asset_tag = form.asset_tag.data or None
+        # asset_tag is intentionally IMMUTABLE (auto-generated)
         asset.name = form.name.data
         asset.description = form.description.data or None
         asset.serial_number = form.serial_number.data or None
@@ -187,19 +257,12 @@ def edit_asset(asset_id):
 
         db.session.commit()
         flash("Asset updated successfully.", "success")
-        return redirect(url_for("assets.list_assets"))
+        return redirect(url_for("assets.asset_detail", asset_id=asset.id))
 
     if form.errors and request.method == "POST":
         flash("Please correct the errors in the form.", "danger")
 
-    return render_template(
-        "assets/create.html",
-        form=form,
-        is_edit=True,
-        asset=asset
-    )
-
-
+    return render_template("assets/create.html", form=form, is_edit=True, asset=asset)
 
 
 @bp.route("/<int:asset_id>")
@@ -214,33 +277,6 @@ def asset_detail(asset_id):
     )
     return render_template("assets/detail.html", asset=asset, events=events)
 
-    form = AssetForm(obj=asset)
-    _populate_form_choices(form)
-
-    # For GET, AssetForm(obj=asset) already pre-fills everything.
-    # For POST, WTForms will override with submitted data.
-
-    if form.validate_on_submit():
-        asset.asset_tag = form.asset_tag.data or None
-        asset.name = form.name.data
-        asset.description = form.description.data or None
-        asset.serial_number = form.serial_number.data or None
-        asset.status = form.status.data
-        asset.purchase_date = form.purchase_date.data
-        asset.warranty_expiry_date = form.warranty_expiry_date.data
-        asset.cost = form.cost.data
-        asset.category_id = _normalize_id(form.category_id.data)
-        asset.subcategory_id = _normalize_id(form.subcategory_id.data)
-        asset.location_id = _normalize_id(form.location_id.data)
-        asset.vendor_id = _normalize_id(form.vendor_id.data)
-        asset.notes = form.notes.data or None
-
-        db.session.commit()
-        flash("Asset updated successfully.", "success")
-        return redirect(url_for("assets.list_assets"))
-
-    if form.errors and request.method == "POST":
-        flash("Please correct the errors in the form.", "danger")
 
 @bp.route("/<int:asset_id>/retire", methods=["POST"])
 @admin_required
@@ -300,7 +336,6 @@ def dispose_asset(asset_id):
     return redirect(url_for("assets.asset_detail", asset_id=asset.id))
 
 
-
 @bp.route("/<int:asset_id>/assign", methods=["POST"])
 @admin_required
 def assign_asset(asset_id):
@@ -329,7 +364,6 @@ def assign_asset(asset_id):
     if asset.status in ["in_stock", "under_repair"]:
         asset.status = "in_use"
 
-    # log event
     note_parts = [f"Assigned to {assigned_to}"]
     if assigned_department:
         note_parts.append(f"({assigned_department})")
@@ -349,7 +383,6 @@ def assign_asset(asset_id):
     db.session.commit()
     flash("Asset has been assigned successfully.", "success")
     return redirect(url_for("assets.asset_detail", asset_id=asset.id))
-
 
 
 @bp.route("/<int:asset_id>/unassign", methods=["POST"])
@@ -387,6 +420,7 @@ def unassign_asset(asset_id):
     flash("Asset has been unassigned and returned to stock.", "success")
     return redirect(url_for("assets.asset_detail", asset_id=asset.id))
 
+
 @bp.route("/<int:asset_id>/repair/start", methods=["GET", "POST"])
 @admin_required
 def start_repair(asset_id):
@@ -413,7 +447,6 @@ def start_repair(asset_id):
         asset.repair_reference = repair_reference or None
         asset.repair_notes = repair_notes or None
 
-        # Move asset to under_repair
         asset.status = "under_repair"
 
         # Clear assignment when going to repair
@@ -465,7 +498,6 @@ def complete_repair(asset_id):
         old_status = asset.status
         old_location_id = asset.location_id
 
-        # Parse cost
         cost_value = None
         if repair_cost:
             try:
@@ -478,21 +510,12 @@ def complete_repair(asset_id):
         if cost_value is not None:
             asset.repair_cost = cost_value
         if repair_notes:
-            # Append or overwrite; for now overwrite
             asset.repair_notes = repair_notes
 
-        if outcome == "disposed":
-            asset.status = "disposed"
-        else:
-            # Default: back to stock
-            asset.status = "in_stock"
+        asset.status = "disposed" if outcome == "disposed" else "in_stock"
 
         note_parts = ["Repair completed"]
-        if outcome == "disposed":
-            note_parts.append("Outcome: Asset disposed after repair")
-        else:
-            note_parts.append("Outcome: Returned to stock")
-
+        note_parts.append("Outcome: Asset disposed after repair" if outcome == "disposed" else "Outcome: Returned to stock")
         if repair_cost:
             note_parts.append(f"Cost: {repair_cost}")
         if repair_notes:
@@ -515,12 +538,10 @@ def complete_repair(asset_id):
     return render_template("assets/repair_complete.html", asset=asset)
 
 
-
 @bp.route("/<int:asset_id>/move", methods=["GET", "POST"])
 @admin_required
 def move_asset(asset_id):
     asset = Asset.query.get_or_404(asset_id)
-
     locations = Location.query.order_by(Location.name).all()
 
     if request.method == "POST":
@@ -532,33 +553,27 @@ def move_asset(asset_id):
             flash("Please select a valid location.", "danger")
             return redirect(url_for("assets.move_asset", asset_id=asset.id))
 
-        new_location_id = int(new_location_id)
+        new_location_id_int = int(new_location_id)
 
-        if new_location_id == asset.location_id:
+        if new_location_id_int == asset.location_id:
             flash("Asset is already in this location.", "warning")
             return redirect(url_for("assets.move_asset", asset_id=asset.id))
 
         old_location_id = asset.location_id
+        asset.location_id = new_location_id_int
 
-        # Update asset location
-        asset.location_id = new_location_id
-
-        # Build event note
-        note_parts = [f"Moved from LocationID {old_location_id} to {new_location_id}"]
+        note_parts = [f"Moved from LocationID {old_location_id} to {new_location_id_int}"]
         if reason:
             note_parts.append(f"Reason: {reason}")
         if reference:
             note_parts.append(f"Ref: {reference}")
 
-        note = " | ".join(note_parts)
-
-        # Log event
         log_asset_event(
             asset=asset,
             event_type="move",
-            note=note,
+            note=" | ".join(note_parts),
             from_location_id=old_location_id,
-            to_location_id=new_location_id,
+            to_location_id=new_location_id_int,
             from_status=asset.status,
             to_status=asset.status,
         )
@@ -567,8 +582,4 @@ def move_asset(asset_id):
         flash("Asset moved successfully.", "success")
         return redirect(url_for("assets.asset_detail", asset_id=asset.id))
 
-    return render_template(
-        "assets/move.html",
-        asset=asset,
-        locations=locations
-    )
+    return render_template("assets/move.html", asset=asset, locations=locations)

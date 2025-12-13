@@ -27,6 +27,7 @@
                 <table class="table table-sm align-middle mb-0">
                     <thead>
                         <tr>
+                            <th>Code</th>
                             <th>Name</th>
                             <th>Description</th>
                             <th width="120">Actions</th>
@@ -35,6 +36,7 @@
                     <tbody>
                         {% for cat in categories %}
                         <tr>
+                            <td>{{ cat.code or '-' }}</td>
                             <td>{{ cat.name }}</td>
                             <td>{{ cat.description or '-' }}</td>
                             <td>

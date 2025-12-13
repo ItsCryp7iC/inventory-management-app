@@ -37,6 +37,7 @@ class Category(TimestampMixin, db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), nullable=False, unique=True)
+    code = db.Column(db.String(20), nullable=False, unique=True)  # e.g. COMP, MONI
     description = db.Column(db.Text, nullable=True)
     is_active = db.Column(db.Boolean, default=True, nullable=False)
 

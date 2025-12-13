@@ -42,14 +42,17 @@ def seed():
         laptop_cat, _ = get_or_create(
             Category,
             name="Laptop",
+            code="LAPTOP",
         )
         desktop_cat, _ = get_or_create(
             Category,
             name="Desktop",
+            code="DESKTOP",
         )
         network_cat, _ = get_or_create(
             Category,
             name="Networking",
+            code="NETWORK",
         )
 
         get_or_create(SubCategory, name="Ultrabook", category=laptop_cat)

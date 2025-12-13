@@ -23,14 +23,6 @@
             {{ form.hidden_tag() }}
 
             <div class="row g-3">
-                <div class="col-md-4">
-                    <label class="form-label">{{ form.asset_tag.label }}</label>
-                    {{ form.asset_tag(class="form-control") }}
-                    {% for err in form.asset_tag.errors %}
-                        <div class="text-danger small">{{ err }}</div>
-                    {% endfor %}
-                </div>
-
                 <div class="col-md-8">
                     <label class="form-label">{{ form.name.label }} <span class="text-danger">*</span></label>
                     {{ form.name(class="form-control", placeholder="e.g. Dell Latitude 5420") }}
