@@ -66,3 +66,13 @@ def edit_location(location_id):
         return redirect(url_for("locations.list_locations"))
 
     return render_template("locations/form.html", form=form, is_edit=True, loc=loc)
+
+
+@bp.route("/<int:location_id>/delete", methods=["POST"])
+@admin_required
+def delete_location(location_id):
+    loc = Location.query.get_or_404(location_id)
+    db.session.delete(loc)
+    db.session.commit()
+    flash("Location deleted.", "success")
+    return redirect(url_for("locations.list_locations"))

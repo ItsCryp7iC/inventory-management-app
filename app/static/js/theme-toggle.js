@@ -30,11 +30,11 @@ document.addEventListener("DOMContentLoaded", function () {
     function applySidebar(collapsed) {
         if (collapsed) {
             body.classList.add("sidebar-collapsed");
-            if (sidebarToggle) sidebarToggle.textContent = "»";
+            if (sidebarToggle) sidebarToggle.textContent = ">";
             localStorage.setItem(sidebarStateKey, "1");
         } else {
             body.classList.remove("sidebar-collapsed");
-            if (sidebarToggle) sidebarToggle.textContent = "«";
+            if (sidebarToggle) sidebarToggle.textContent = "<";
             localStorage.removeItem(sidebarStateKey);
         }
     }

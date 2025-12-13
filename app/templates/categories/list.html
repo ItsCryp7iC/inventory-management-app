@@ -30,7 +30,7 @@
                             <th>Code</th>
                             <th>Name</th>
                             <th>Description</th>
-                            <th width="120">Actions</th>
+                            <th width="160">Actions</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -40,10 +40,16 @@
                             <td>{{ cat.name }}</td>
                             <td>{{ cat.description or '-' }}</td>
                             <td>
-                                <a href="{{ url_for('categories.edit_category', category_id=cat.id) }}"
-                                   class="btn btn-sm btn-outline-secondary">
-                                    Edit
-                                </a>
+                                <div class="d-flex gap-2">
+                                    <a href="{{ url_for('categories.edit_category', category_id=cat.id) }}"
+                                       class="btn btn-sm btn-outline-secondary">
+                                        Edit
+                                    </a>
+                                    <form method="post" action="{{ url_for('categories.delete_category', category_id=cat.id) }}" onsubmit="return confirm('Delete this category?');">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                        <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
+                                    </form>
+                                </div>
                             </td>
                         </tr>
                         {% endfor %}

@@ -166,3 +166,23 @@ def edit_subcategory(subcat_id):
         return redirect(url_for("categories.list_subcategories"))
 
     return render_template("categories/subcategories_form.html", form=form, is_edit=True, subcat=subcat)
+
+
+@bp.route("/<int:category_id>/delete", methods=["POST"])
+@admin_required
+def delete_category(category_id):
+    cat = Category.query.get_or_404(category_id)
+    db.session.delete(cat)
+    db.session.commit()
+    flash("Category deleted.", "success")
+    return redirect(url_for("categories.list_categories"))
+
+
+@bp.route("/subcategories/<int:subcat_id>/delete", methods=["POST"])
+@admin_required
+def delete_subcategory(subcat_id):
+    subcat = SubCategory.query.get_or_404(subcat_id)
+    db.session.delete(subcat)
+    db.session.commit()
+    flash("Sub-Category deleted.", "success")
+    return redirect(url_for("categories.list_subcategories"))

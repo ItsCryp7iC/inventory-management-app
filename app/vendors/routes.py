@@ -65,3 +65,13 @@ def edit_vendor(vendor_id):
         return redirect(url_for("vendors.list_vendors"))
 
     return render_template("vendors/form.html", form=form, is_edit=True, vendor=vendor)
+
+
+@bp.route("/<int:vendor_id>/delete", methods=["POST"])
+@admin_required
+def delete_vendor(vendor_id):
+    vendor = Vendor.query.get_or_404(vendor_id)
+    db.session.delete(vendor)
+    db.session.commit()
+    flash("Vendor deleted.", "success")
+    return redirect(url_for("vendors.list_vendors"))

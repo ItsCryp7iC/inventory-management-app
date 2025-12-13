@@ -39,6 +39,12 @@
                    class="btn btn-outline-danger btn-sm">
                     Reset Password
                 </a>
+                {% if u.id != current_user.id %}
+                <form method="post" action="{{ url_for('admin.delete_user', user_id=u.id) }}" onsubmit="return confirm('Delete this user?');">
+                    {{ form.hidden_tag() }}
+                    <button class="btn btn-outline-danger btn-sm">Delete</button>
+                </form>
+                {% endif %}
             </td>
         </tr>
     {% endfor %}

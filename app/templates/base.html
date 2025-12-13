@@ -58,7 +58,7 @@
                     aria-label="Toggle sidebar"
                     title="Toggle sidebar"
                 >
-                    «
+                    <
                 </button>
             </div>
             <div class="list-group small sidebar-nav">
@@ -73,9 +73,15 @@
                     </a>
                     
                     <a href="{{ url_for('categories.list_categories') }}"
-                    class="list-group-item list-group-item-action{% if request.endpoint and request.endpoint.startswith('categories.') %} active{% endif %}">
+                    class="list-group-item list-group-item-action{% if request.endpoint and request.endpoint.startswith('categories.') and 'subcategories' not in request.endpoint %} active{% endif %}">
                         <span class="nav-icon">🗂️</span>
                         <span class="nav-label">Categories</span>
+                    </a>
+
+                    <a href="{{ url_for('categories.list_subcategories') }}"
+                    class="list-group-item list-group-item-action{% if request.endpoint and 'subcategories' in request.endpoint %} active{% endif %}">
+                        <span class="nav-icon">📑</span>
+                        <span class="nav-label">Sub-Categories</span>
                     </a>
 
                     <a href="{{ url_for('locations.list_locations') }}"

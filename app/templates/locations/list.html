@@ -20,7 +20,7 @@
                             <th>Name</th>
                             <th>Code</th>
                             <th>Status</th>
-                            <th width="140">Actions</th>
+                            <th width="170">Actions</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -36,10 +36,16 @@
                                 {% endif %}
                             </td>
                             <td>
-                                <a href="{{ url_for('locations.edit_location', location_id=loc.id) }}"
-                                   class="btn btn-sm btn-outline-secondary">
-                                    Edit
-                                </a>
+                                <div class="d-flex gap-2">
+                                    <a href="{{ url_for('locations.edit_location', location_id=loc.id) }}"
+                                       class="btn btn-sm btn-outline-secondary">
+                                        Edit
+                                    </a>
+                                    <form method="post" action="{{ url_for('locations.delete_location', location_id=loc.id) }}" onsubmit="return confirm('Delete this location?');">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                        <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
+                                    </form>
+                                </div>
                             </td>
                         </tr>
                         {% endfor %}

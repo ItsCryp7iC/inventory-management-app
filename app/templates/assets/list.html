@@ -194,30 +194,6 @@
                     </tbody>
                 </table>
             </div>
-            {% for asset in assets %}
-            <div class="modal fade" id="deleteModal-{{ asset.id }}" tabindex="-1" aria-hidden="true">
-                <div class="modal-dialog modal-dialog-centered">
-                    <div class="modal-content">
-                        <div class="modal-header">
-                            <h5 class="modal-title">Delete Asset</h5>
-                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                        </div>
-                        <div class="modal-body">
-                            <p class="mb-0">
-                                Delete asset "{{ asset.name }}" ({{ asset.asset_tag or "No Tag" }})? This action cannot be undone.
-                            </p>
-                        </div>
-                        <div class="modal-footer">
-                            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
-                            <form method="post" action="{{ url_for('assets.delete_asset', asset_id=asset.id) }}">
-                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                <button type="submit" class="btn btn-danger">Delete</button>
-                            </form>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            {% endfor %}
         {% else %}
             <p class="text-muted mb-0">
                 No assets found. Asset creation form will be added next.
@@ -225,4 +201,31 @@
         {% endif %}
     </div>
 </div>
+
+{% if assets %}
+    {% for asset in assets %}
+    <div class="modal fade" id="deleteModal-{{ asset.id }}" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Delete Asset</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="mb-0">
+                        Delete asset "{{ asset.name }}" ({{ asset.asset_tag or "No Tag" }})? This action cannot be undone.
+                    </p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <form method="post" action="{{ url_for('assets.delete_asset', asset_id=asset.id) }}">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button type="submit" class="btn btn-danger">Delete</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+{% endif %}
 {% endblock %}
