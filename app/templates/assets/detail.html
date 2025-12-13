@@ -305,8 +305,8 @@
                             {% endif %}
                         </td>
 
-                        <td style="white-space: pre-line;">
-                            {{ ev.note or "-" }}
+                        <td style="white-space: normal; padding-top: 2px; padding-bottom: 2px; vertical-align: middle; line-height: 1.2;">
+                            {{ (ev.note or "-")|replace('\r', ' ')|replace('\n', ' ')|trim }}
                         </td>
 
                     </tr>
