@@ -143,23 +143,25 @@
                             <td>
                                 {% set label_map = {
                                     "in_stock": "In Stock",
-                                    "in_use": "In Use",
+                                    "assigned": "Assigned",
                                     "repair": "Repair",
                                     "damaged": "Damaged",
                                     "missing": "Missing",
                                     "disposed": "Disposed",
                                     "retired": "Retired (legacy)",
-                                    "under_repair": "Under Repair (legacy)"
+                                    "under_repair": "Under Repair (legacy)",
+                                    "in_use": "Assigned (legacy)"
                                 } %}
                                 {% set color_map = {
                                     "in_stock": "success",
-                                    "in_use": "primary",
+                                    "assigned": "primary",
                                     "repair": "warning",
                                     "damaged": "danger",
                                     "missing": "secondary",
                                     "disposed": "dark",
                                     "retired": "secondary",
-                                    "under_repair": "warning"
+                                    "under_repair": "warning",
+                                    "in_use": "primary"
                                 } %}
                                 {% set status_label = label_map.get(asset.status, asset.status) %}
                                 {% set status_color = color_map.get(asset.status, "secondary") %}

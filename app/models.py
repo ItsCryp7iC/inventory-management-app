@@ -125,8 +125,8 @@ class Asset(TimestampMixin, db.Model):
     description = db.Column(db.Text, nullable=True)
 
     serial_number = db.Column(db.String(150), nullable=True)
-    status = db.Column(db.String(50), nullable=False, default="in_use")
-    # status examples: in_stock, in_use, repair, damaged, missing, disposed
+    status = db.Column(db.String(50), nullable=False, default="assigned")
+    # status examples: in_stock, assigned, repair, damaged, missing, disposed
 
     purchase_date = db.Column(db.Date, nullable=True)
     warranty_expiry_date = db.Column(db.Date, nullable=True)

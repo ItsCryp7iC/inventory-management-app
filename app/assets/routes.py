@@ -156,22 +156,14 @@ def ensure_vendor_code(vendor: Vendor):
     if not vendor or vendor.code:
         return
 
-    existing_codes = (
-        Vendor.query
-        .with_entities(Vendor.code)
-        .filter(Vendor.code.isnot(None))
-        .all()
-    )
+    existing_codes = Vendor.query.with_entities(Vendor.code).filter(Vendor.code.isnot(None)).all()
     max_num = 0
     for (code,) in existing_codes:
         if not code:
             continue
-        digits = "".join(ch for ch in code if ch.isdigit())
-        if digits:
-            try:
-                max_num = max(max_num, int(digits))
-            except ValueError:
-                continue
+        code_upper = code.upper().strip()
+        if code_upper.startswith("V") and code_upper[1:].isdigit():
+            max_num = max(max_num, int(code_upper[1:]))
 
     vendor.code = f"V{max_num + 1:03d}"
     db.session.commit()
@@ -224,7 +216,10 @@ def list_assets():
     )
 
     if status:
-        query = query.filter(Asset.status == status)
+        if status == "assigned":
+            query = query.filter(Asset.status.in_(["assigned", "in_use"]))
+        else:
+            query = query.filter(Asset.status == status)
 
     if location_id and location_id.isdigit():
         query = query.filter(Asset.location_id == int(location_id))
@@ -266,7 +261,7 @@ def list_assets():
     status_choices = [
         ("", "All statuses"),
         ("in_stock", "In Stock"),
-        ("in_use", "In Use"),
+        ("assigned", "Assigned"),
         ("repair", "Repair"),
         ("damaged", "Damaged"),
         ("missing", "Missing"),
@@ -461,8 +456,8 @@ def assign_asset(asset_id):
     asset.assigned_email = assigned_email or None
     asset.assigned_at = date.today()
 
-    if asset.status == "in_stock":
-        asset.status = "in_use"
+    if asset.status in ["in_stock", "in_use"]:
+        asset.status = "assigned"
 
     note_parts = [f"Assigned to {assigned_to}"]
     if assigned_department:
@@ -503,7 +498,7 @@ def unassign_asset(asset_id):
     asset.assigned_email = None
     asset.assigned_at = None
 
-    if asset.status == "in_use":
+    if asset.status in ["assigned", "in_use"]:
         asset.status = "in_stock"
 
     log_asset_event(
@@ -771,7 +766,7 @@ EXPORT_HEADERS = [
     "notes",
 ]
 
-ALLOWED_STATUSES = {"in_stock", "in_use", "repair", "damaged", "missing", "disposed"}
+ALLOWED_STATUSES = {"in_stock", "assigned", "repair", "damaged", "missing", "disposed", "in_use"}  # include legacy in_use
 
 
 @admin_required
@@ -843,6 +838,8 @@ def import_assets():
             row_num += 1
             name = (row.get("name") or "").strip()
             status = (row.get("status") or "").strip().lower() or "in_stock"
+            if status == "in_use":
+                status = "assigned"
             category_code = (row.get("category_code") or "").strip().upper()
             subcategory_name = (row.get("subcategory_name") or "").strip()
             location_code = (row.get("location_code") or "").strip().upper()

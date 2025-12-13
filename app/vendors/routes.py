@@ -28,41 +28,78 @@ class VendorForm(FlaskForm):
 @bp.route("/")
 @admin_required
 def list_vendors():
+    _normalize_existing_vendors()
     _assign_missing_codes()
-    vendors = Vendor.query.order_by(Vendor.name.asc()).all()
+    vendors = Vendor.query.order_by(Vendor.code.asc()).all()
     return render_template("vendors/list.html", vendors=vendors)
+
+
+def _current_max_code_number():
+    """
+    Get the largest numeric suffix among vendor codes that match V###.
+    Ignores legacy / non-standard codes so they don't inflate the sequence.
+    """
+    max_num = 0
+    existing_codes = (
+        Vendor.query.with_entities(Vendor.code).filter(Vendor.code.isnot(None)).all()
+    )
+    for (code,) in existing_codes:
+        if not code:
+            continue
+        code_upper = code.upper().strip()
+        if code_upper.startswith("V") and code_upper[1:].isdigit():
+            max_num = max(max_num, int(code_upper[1:]))
+    return max_num
 
 
 def _generate_vendor_code():
     """
     Generate next vendor code like V001, V002 based on existing codes.
     """
-    existing_codes = (
-        Vendor.query
-        .with_entities(Vendor.code)
-        .filter(Vendor.code.isnot(None))
-        .all()
-    )
-    max_num = 0
-    for (code,) in existing_codes:
-        if not code:
-            continue
-        num_part = "".join(ch for ch in code if ch.isdigit())
-        if num_part:
-            try:
-                max_num = max(max_num, int(num_part))
-            except ValueError:
-                continue
-    return f"V{max_num + 1:03d}"
+    next_num = _current_max_code_number() + 1
+    return f"V{next_num:03d}"
 
 
 def _assign_missing_codes():
     missing = Vendor.query.filter((Vendor.code == None) | (Vendor.code == "")).all()  # noqa: E711
     if not missing:
         return
+    next_num = _current_max_code_number()
     for vendor in missing:
-        vendor.code = _generate_vendor_code()
+        next_num += 1
+        vendor.code = f"V{next_num:03d}"
     db.session.commit()
+
+
+def _normalize_existing_vendors():
+    """
+    Clean up legacy data where the vendor name was stored in the code field.
+    - If name is missing but code has text, move that text into name.
+    - If code is missing or does not follow our V### pattern, assign a fresh code.
+    """
+    updated = False
+    next_num = _current_max_code_number()
+    vendors = Vendor.query.all()
+    for vendor in vendors:
+        # Move old name from code into name when name is missing
+        if (vendor.name is None or vendor.name.strip() == "") and vendor.code:
+            vendor.name = vendor.code
+            updated = True
+
+        # Decide if code needs regeneration
+        needs_new_code = (
+            vendor.code is None
+            or vendor.code.strip() == ""
+            or not vendor.code.upper().startswith("V")
+            or not vendor.code.upper()[1:].isdigit()
+        )
+        if needs_new_code:
+            next_num += 1
+            vendor.code = f"V{next_num:03d}"
+            updated = True
+
+    if updated:
+        db.session.commit()
 
 
 @bp.route("/new", methods=["GET", "POST"])

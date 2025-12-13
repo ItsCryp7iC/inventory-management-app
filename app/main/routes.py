@@ -11,7 +11,7 @@ from app.models import Asset
 def index():
     # Basic stats
     total_assets = Asset.query.count()
-    in_use_count = Asset.query.filter_by(status="in_use").count()
+    assigned_count = Asset.query.filter(Asset.status.in_(["assigned", "in_use"])).count()
     in_stock_count = Asset.query.filter_by(status="in_stock").count()
     repair_count = Asset.query.filter_by(status="repair").count()
     damaged_count = Asset.query.filter_by(status="damaged").count()
@@ -43,7 +43,7 @@ def index():
     return render_template(
         "index.html",
         total_assets=total_assets,
-        in_use_count=in_use_count,
+        assigned_count=assigned_count,
         in_stock_count=in_stock_count,
         repair_count=repair_count,
         damaged_count=damaged_count,

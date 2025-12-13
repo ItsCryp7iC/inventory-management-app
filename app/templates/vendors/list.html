@@ -21,8 +21,8 @@
                             <th>Name</th>
                             <th>Email</th>
                             <th>Phone</th>
-                            <th>Website</th>
                             <th>Address</th>
+                            <th>Website</th>
                             <th width="170">Actions</th>
                         </tr>
                     </thead>
@@ -33,7 +33,13 @@
                             <td>{{ vendor.name }}</td>
                             <td>{{ vendor.contact_email or "-" }}</td>
                             <td>{{ vendor.contact_phone or "-" }}</td>
-                            <td>{{ vendor.address or "-" }}</td>
+                            <td>
+                                {% if vendor.address %}
+                                    {{ vendor.address }}
+                                {% else %}
+                                    -
+                                {% endif %}
+                            </td>
                             <td>
                                 {% if vendor.website %}
                                     <a href="{{ vendor.website }}" target="_blank" class="text-decoration-none">

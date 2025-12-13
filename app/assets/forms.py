@@ -21,7 +21,7 @@ class AssetForm(FlaskForm):
         "Status",
         choices=[
             ("in_stock", "In Stock"),
-            ("in_use", "In Use"),
+            ("assigned", "Assigned"),
             ("repair", "Repair"),
             ("damaged", "Damaged"),
             ("missing", "Missing"),
