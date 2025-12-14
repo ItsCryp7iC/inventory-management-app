@@ -1,10 +1,28 @@
+import os
+import sys
 from flask import Flask
 from .extensions import init_extensions
 from datetime import date, timedelta, datetime
+from app.extensions import db
+import sqlalchemy
+from app.models import User
+
+
+def _base_path():
+    """
+    Resolve base path for templates/static for both source and PyInstaller.
+    """
+    if hasattr(sys, "_MEIPASS"):
+        return sys._MEIPASS
+    return os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir))
 
 
 def create_app():
-    app = Flask(__name__)
+    base_path = _base_path()
+    template_folder = os.path.join(base_path, "app", "templates")
+    static_folder = os.path.join(base_path, "app", "static")
+
+    app = Flask(__name__, template_folder=template_folder, static_folder=static_folder)
 
     # Load config
     app.config.from_object("config.Config")
@@ -39,6 +57,22 @@ def create_app():
 
     from .settings import bp as settings_bp
     app.register_blueprint(settings_bp)
+
+    # Ensure database/tables exist (especially on first run in packaged mode)
+    with app.app_context():
+        try:
+            db.create_all()
+        except sqlalchemy.exc.SQLAlchemyError:
+            # If the DB file is missing or path invalid, surface error during startup
+            app.logger.exception("Database initialization failed.")
+            raise
+
+        # Seed a default admin for fresh DBs
+        if User.query.count() == 0:
+            admin = User(username="admin", is_admin=True)
+            admin.set_password("123456")
+            db.session.add(admin)
+            db.session.commit()
 
     # Global Jinja helpers
     app.jinja_env.globals["date"] = date

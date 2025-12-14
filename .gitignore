@@ -3,3 +3,12 @@ __pycache__/
 instance/
 .env
 *.db
+build/
+dist/
+*.spec
+*.exe
+*.pyc
+*.pyo
+*.pyd
+*.log
+*.DS_Store
