@@ -24,24 +24,12 @@ def index():
     today = date.today()
     warning_threshold = today + timedelta(days=30)
 
-    attention_query = Asset.query
-
-    attention_assets = attention_query.filter(
-        (
-            # Warranty expired or expiring soon
-            (Asset.warranty_expiry_date != None)  # noqa: E711
-            & (Asset.warranty_expiry_date <= warning_threshold)
-            & (Asset.status.notin_(["disposed"]))
-        )
-        |
-        # OR status repair/damaged/missing
-        (Asset.status.in_(["repair", "damaged", "missing"]))
-        |
-        # OR missing key metadata
-        (Asset.location_id == None)  # noqa: E711
-        |
-        (Asset.category_id == None)  # noqa: E711
-    ).order_by(Asset.warranty_expiry_date.asc().nullslast(), Asset.id.desc()).limit(10).all()
+    attention_assets = (
+        Asset.query
+        .filter(Asset.status.in_(["repair", "damaged", "missing"]))
+        .order_by(Asset.updated_at.desc(), Asset.id.desc())
+        .all()
+    )
 
     # Aggregates for charts
     category_breakdown = [
