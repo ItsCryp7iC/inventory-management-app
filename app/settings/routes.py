@@ -1,8 +1,12 @@
-from flask import render_template, redirect, url_for, flash
+from flask import render_template, redirect, url_for, flash, request
 from flask_login import login_required
 from wtforms import StringField, SubmitField
 from wtforms.validators import DataRequired, Email, Length, Optional
 from flask_wtf import FlaskForm
+from datetime import datetime
+from pathlib import Path
+import shutil
+import os
 
 from . import bp
 from app.auth.decorators import admin_required
@@ -44,6 +48,24 @@ class GeneralSettingsForm(FlaskForm):
 def general_settings():
     form = GeneralSettingsForm()
 
+    # Paths for backup/restore
+    data_dir = Path(os.environ.get("INVENTORY_DATA_DIR", Path.cwd() / "data"))
+    db_file = data_dir / "inventory.db"
+    backup_dir = data_dir.parent / "Data Backups"
+    backup_dir.mkdir(parents=True, exist_ok=True)
+
+    def list_backups():
+        if not backup_dir.exists():
+            return []
+        files = sorted(backup_dir.glob("*.db"), key=lambda p: p.stat().st_mtime, reverse=True)
+        return [
+            {
+                "name": f.name,
+                "mtime": datetime.fromtimestamp(f.stat().st_mtime).strftime("%Y-%m-%d %H:%M:%S"),
+            }
+            for f in files
+        ]
+
     if form.validate_on_submit():
         set_setting_value("app_name", form.app_name.data.strip())
         set_setting_value("support_email", form.support_email.data.strip() or None)
@@ -66,6 +88,7 @@ def general_settings():
         "settings/index.html",
         form=form,
         export_headers=EXPORT_HEADERS,
+        backups=list_backups(),
     )
 
 
@@ -102,4 +125,54 @@ def reset_app_data():
 
     db.session.commit()
     flash("All data wiped. Admin users remain.", "success")
+    return redirect(url_for("settings.general_settings"))
+
+
+@bp.route("/backup", methods=["POST"])
+@login_required
+@admin_required
+def create_backup():
+    data_dir = Path(os.environ.get("INVENTORY_DATA_DIR", Path.cwd() / "data"))
+    db_file = data_dir / "inventory.db"
+    backup_dir = data_dir.parent / "Data Backups"
+    backup_dir.mkdir(parents=True, exist_ok=True)
+
+    if not db_file.exists():
+        flash("No database file found to back up.", "danger")
+        return redirect(url_for("settings.general_settings"))
+
+    timestamp = datetime.now().strftime("%Y%m%d-%H%M%S")
+    backup_path = backup_dir / f"inventory-backup-{timestamp}.db"
+    try:
+        shutil.copy2(db_file, backup_path)
+        flash(f"Backup created: {backup_path.name}", "success")
+    except Exception as exc:
+        flash(f"Backup failed: {exc}", "danger")
+
+    return redirect(url_for("settings.general_settings"))
+
+
+@bp.route("/restore", methods=["POST"])
+@login_required
+@admin_required
+def restore_backup():
+    filename = request.form.get("backup_file", "")
+    data_dir = Path(os.environ.get("INVENTORY_DATA_DIR", Path.cwd() / "data"))
+    db_file = data_dir / "inventory.db"
+    backup_dir = data_dir.parent / "Data Backups"
+    src = backup_dir / filename
+
+    if not filename or not src.exists():
+        flash("Selected backup not found.", "danger")
+        return redirect(url_for("settings.general_settings"))
+
+    try:
+        if db_file.exists():
+            safety = db_file.with_suffix(".pre-restore.db")
+            shutil.copy2(db_file, safety)
+        shutil.copy2(src, db_file)
+        flash(f"Restored backup: {filename}. Recent changes may be lost.", "warning")
+    except Exception as exc:
+        flash(f"Restore failed: {exc}", "danger")
+
     return redirect(url_for("settings.general_settings"))
