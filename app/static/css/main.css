@@ -56,6 +56,12 @@ body {
   max-width: 1700px;
   margin: 0 auto;
   padding: 20px 16px 32px;
+  background: rgba(15, 23, 42, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 18px;
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.35);
+  backdrop-filter: blur(10px);
+  margin-top: 44px;
 }
 
 .layout-shell {
@@ -98,6 +104,7 @@ hr {
   backdrop-filter: blur(10px);
   box-shadow: var(--shadow);
   border-radius: 16px;
+  margin-top: 8px;
 }
 
 /* Navbar text should always be readable */
@@ -107,6 +114,13 @@ hr {
 .navbar .navbar-brand:focus {
     color: var(--text) !important;
     text-decoration: none;
+}
+.brand-logo {
+  width: 32px;
+  height: 32px;
+  object-fit: contain;
+  border-radius: 6px;
+  box-shadow: 0 6px 16px rgba(0,0,0,0.25);
 }
 
 .navbar .nav-link,

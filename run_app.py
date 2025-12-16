@@ -1,38 +1,20 @@
 import os
 import sys
-import webbrowser
-from threading import Timer
-
 from app import create_app
 
 APP_NAME = "ITInventory"
 
-# Precompute data dir so Config picks it up before app is created
-data_root = os.path.join(
-    os.environ.get("LOCALAPPDATA") or os.environ.get("APPDATA") or os.path.expanduser("~"),
-    APP_NAME,
-    "data",
-)
+# Precompute data dir next to the executable/script so data travels with the app
+base_dir = os.path.dirname(sys.executable) if getattr(sys, "frozen", False) else os.path.abspath(os.path.dirname(__file__))
+data_root = os.path.join(base_dir, "data")
 os.makedirs(data_root, exist_ok=True)
 # Ensure Config sees this path on import
 os.environ.setdefault("INVENTORY_DATA_DIR", data_root)
 
-def app_data_dir(app_name=APP_NAME):
-    base = os.environ.get("LOCALAPPDATA") or os.environ.get("APPDATA") or os.path.expanduser("~")
-    path = os.path.join(base, app_name)
-    os.makedirs(path, exist_ok=True)
-    return path
-
-def open_browser():
-    webbrowser.open("http://127.0.0.1:5000")
-
 def create_config_overrides():
     """
-    Force SQLite DB into a writable AppData folder.
+    Force SQLite DB into a writable folder beside the app.
     """
-    data_root = os.path.join(app_data_dir(), "data")
-    os.makedirs(data_root, exist_ok=True)
-
     db_path = os.path.join(data_root, "inventory.db")
     os.environ.setdefault("INVENTORY_DATA_DIR", data_root)
     return {
@@ -51,5 +33,4 @@ if __name__ == "__main__":
     app = create_app()
     app.config.update(create_config_overrides())
 
-    Timer(1, open_browser).start()
     app.run(host="127.0.0.1", port=5000, debug=False)
