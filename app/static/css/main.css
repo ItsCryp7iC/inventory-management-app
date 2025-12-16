@@ -488,7 +488,7 @@ html[data-theme="dark"] .btn-close {
     position: relative;
     width: 220px;
     max-width: 220px;
-    transition: width 0.25s ease, padding 0.25s ease, margin 0.25s ease;
+    transition: width 0.25s ease, padding 0.25s ease, margin 0.25s ease, max-width 0.25s ease;
     overflow: visible;
     display: flex;
     flex-direction: column;
@@ -516,7 +516,7 @@ html[data-theme="dark"] .btn-close {
     display: flex;
     align-items: center;
     gap: 10px;
-    transition: background 0.18s ease, color 0.18s ease;
+    transition: background 0.18s ease, color 0.18s ease, padding 0.2s ease, gap 0.2s ease;
     min-height: 40px;
     justify-content: flex-start;
 }
@@ -526,7 +526,8 @@ html[data-theme="dark"] .btn-close {
 }
 
 .sidebar-nav .nav-label {
-    transition: opacity 0.16s ease, transform 0.16s ease;
+    transition: opacity 0.16s ease, transform 0.16s ease, width 0.16s ease;
+    white-space: nowrap;
 }
 
 .sidebar-collapsed .sidebar-nav .nav-label {
@@ -564,7 +565,7 @@ html[data-theme="dark"] .btn-close {
     height: 48px;
     width: 100%;
     border-radius: 12px;
-    gap: 0;
+    gap: 4px;
     text-align: center;
 }
 

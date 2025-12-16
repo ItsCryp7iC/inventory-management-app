@@ -1,8 +1,3 @@
-(function () {
-    const storedTheme = localStorage.getItem("theme") || "dark";
-    document.documentElement.setAttribute("data-theme", storedTheme);
-})();
-
 document.addEventListener("DOMContentLoaded", function () {
     const btn = document.getElementById("theme-toggle-btn");
     const sidebarToggle = document.getElementById("sidebar-toggle");
