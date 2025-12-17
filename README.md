@@ -74,7 +74,11 @@ Security
 
 Screenshots
 -----------
-_(to be added)_
+![Dashboard](app/static/img/screenshots/dashboard.png)
+![Assets](app/static/img/screenshots/assets.png)
+![Categories](app/static/img/screenshots/categories.png)
+![Settings](app/static/img/screenshots/settings.png)
+![Labels](app/static/img/screenshots/labels.png)
 
 Acknowledgements
 ----------------
