@@ -58,10 +58,21 @@
             Manage asset data in bulk via CSV. Required headers: <code>{{ export_headers|join(', ') }}</code>.
             Minimum: <strong>name</strong>, <strong>status</strong>, <strong>category_code</strong>, <strong>location_code</strong>.
         </p>
+        <p class="text-muted small mb-3">
+            For a full browser download experience, open
+            <a href="http://127.0.0.1:5000/" target="_blank">http://127.0.0.1:5000/</a>.
+        </p>
         <div class="row g-3">
-            <div class="col-12 col-md-6">
-                <a href="{{ url_for('assets.list_assets', export='csv') }}" class="btn btn-outline-secondary w-100">
+            <div class="col-12 col-md-6 d-flex flex-column gap-2">
+                <a href="{{ url_for('assets.list_assets', export='csv') }}" class="btn btn-outline-secondary w-100" data-download="true">
                     Download CSV Export
+                </a>
+                <form method="post" action="{{ url_for('settings.backup_assets_csv_to_file') }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button type="submit" class="btn btn-outline-primary w-100">Save CSV to Backups Folder</button>
+                </form>
+                <a href="{{ url_for('settings.asset_labels_sheet') }}" class="btn btn-outline-secondary w-100" target="_blank">
+                    Open Printable Asset Barcode Sheet
                 </a>
             </div>
             <div class="col-12 col-md-6">
@@ -83,10 +94,14 @@
             <code>category_code, category_name, category_description, subcategory_name, subcategory_description</code>.
         </p>
         <div class="row g-3">
-            <div class="col-12 col-md-6">
-                <a href="{{ url_for('categories.export_categories') }}" class="btn btn-outline-secondary w-100">
+            <div class="col-12 col-md-6 d-flex flex-column gap-2">
+                <a href="{{ url_for('categories.export_categories') }}" class="btn btn-outline-secondary w-100" data-download="true">
                     Download Category Backup
                 </a>
+                <form method="post" action="{{ url_for('settings.backup_categories_csv_to_file') }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button type="submit" class="btn btn-outline-primary w-100">Save Category CSV to Backups Folder</button>
+                </form>
             </div>
             <div class="col-12 col-md-6">
                 <form method="post" action="{{ url_for('categories.import_categories') }}" enctype="multipart/form-data" class="d-flex flex-column gap-2">

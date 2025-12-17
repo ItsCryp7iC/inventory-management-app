@@ -158,6 +158,35 @@
 <script>
     (function() {
         // No custom frame controls in native frame mode
+
+        // In pywebview, handle downloads via fetch+blob to bypass blocked native downloads
+        if (window.pywebview) {
+            document.querySelectorAll('a[data-download="true"]').forEach(function(a) {
+                a.addEventListener('click', async function (e) {
+                    e.preventDefault();
+                    try {
+                        const resp = await fetch(a.href, { credentials: "include" });
+                        if (!resp.ok) throw new Error("Download failed");
+                        const blob = await resp.blob();
+                        let filename = "export.csv";
+                        const cd = resp.headers.get("Content-Disposition");
+                        if (cd && cd.indexOf("filename=") !== -1) {
+                            filename = cd.split("filename=")[1].replace(/["']/g, "").trim();
+                        }
+                        const url = URL.createObjectURL(blob);
+                        const link = document.createElement("a");
+                        link.href = url;
+                        link.download = filename;
+                        document.body.appendChild(link);
+                        link.click();
+                        document.body.removeChild(link);
+                        URL.revokeObjectURL(url);
+                    } catch (err) {
+                        alert("Download failed: " + err.message);
+                    }
+                });
+            });
+        }
     })();
 </script>
 

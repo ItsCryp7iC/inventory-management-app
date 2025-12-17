@@ -794,6 +794,13 @@ def move_asset(asset_id):
     return render_template("assets/move.html", asset=asset, locations=locations)
 
 
+@bp.route("/<int:asset_id>/label")
+@login_required
+def asset_label(asset_id):
+    asset = Asset.query.get_or_404(asset_id)
+    return render_template("assets/label.html", asset=asset)
+
+
 @bp.route("/<int:asset_id>/delete", methods=["POST"])
 @admin_required
 def delete_asset(asset_id):
